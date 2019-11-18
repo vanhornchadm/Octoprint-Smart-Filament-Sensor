@@ -22,14 +22,14 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
         GPIO.setwarnings(False)        # Disable GPIO warnings
 
     @octoprint.plugin.BlueprintPlugin.route("/filament", methods=["GET"])
-    def check_status(self):
+    def api_get_filament(self):
         status = "-1"
         if self.runout_sensor_enabled():
-            status = "1" if self.no_filament() else "0"
+            status = "0" if self.no_filament() else "1"
         return jsonify(status=status)
 
     @octoprint.plugin.BlueprintPlugin.route("/jammed", methods=["GET"])
-    def check_status(self):
+    def api_get_jammed(self):
         status = "-1"
         if self.jam_sensor_enabled():
             status = "1" if self.jammed() else "0"
