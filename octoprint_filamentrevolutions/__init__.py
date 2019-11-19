@@ -72,6 +72,10 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
         return self._settings.get_boolean(["runout_pause_print"])
 
     @property
+    def jammed_pause_print(self):
+        return self._settings.get_boolean(["jammed_pause_print"])
+
+    @property
     def send_gcode_only_once(self):
         return self._settings.get_boolean(["send_gcode_only_once"])
 
@@ -212,7 +216,7 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
             else:
                 # Need to resend GCODE (old default) so reset trigger
                 self.runout_triggered = 0
-            if self.pause_print:
+            if self.runout_pause_print:
                 self._logger.info("Pausing print.")
                 self._printer.pause_print()
             if self.no_filament_gcode:
@@ -220,7 +224,7 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
                 self._printer.commands(self.no_filament_gcode)
         else:
             self._logger.info("Filament detected!")
-            if not self.pause_print:
+            if not self.runout_pause_print:
                 self.runout_triggered = 0
 
     def jam_sensor_callback(self, _):
