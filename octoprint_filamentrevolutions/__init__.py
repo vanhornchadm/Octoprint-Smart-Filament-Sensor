@@ -195,8 +195,10 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
             Events.ERROR
         ):
             self._logger.info("%s: Disabling filament sensors." % (event))
-            GPIO.remove_event_detect(self.runout_pin)
-            GPIO.remove_event_detect(self.jam_pin)
+            if self.runout_sensor_enabled():
+                GPIO.remove_event_detect(self.runout_pin)
+            if self.jam_sensor_enabled():
+                GPIO.remove_event_detect(self.jam_pin)
 
     def runout_sensor_callback(self, _):
         sleep(self.runout_bounce/1000)
