@@ -260,7 +260,7 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
 
     def get_update_information(self):
         return dict(
-            octoprint_filament=dict(
+            filamentrevolutions=dict(
                 displayName="Filament Sensors Revolutions",
                 displayVersion=self._plugin_version,
 
@@ -288,3 +288,12 @@ def __plugin_load__():
     __plugin_hooks__ = {
         "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
     }
+
+
+def __plugin_check__():
+    try:
+        import RPi.GPIO
+    except ImportError:
+        return False
+
+    return True
