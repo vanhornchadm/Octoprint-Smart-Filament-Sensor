@@ -13,7 +13,6 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                                  octoprint.plugin.EventHandlerPlugin,
                                  octoprint.plugin.TemplatePlugin,
                                  octoprint.plugin.SettingsPlugin):
-    global test
 
     def initialize(self):
         self._logger.info(
@@ -21,6 +20,8 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         if GPIO.VERSION < "0.6":       # Need at least 0.6 for edge detection
             raise Exception("RPi.GPIO must be greater than 0.6")
         GPIO.setwarnings(False)        # Disable GPIO warnings
+
+        self.print_started = False
 
 #Properties
     @property
@@ -50,20 +51,11 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
 # Initialization methods
     def _setup_sensor(self):
-        self.motion_sensor_filament_moving = True
-        self.motion_sensor = None
-
-        #TODO: motion sensor enabled logging
-        if self.motion_sensor_enabled():
-            if self.mode == 0:
-                self._logger.info("Using Board Mode")
-                GPIO.setmode(GPIO.BOARD)
-            else:
-                self._logger.info("Using BCM Mode")
-                GPIO.setmode(GPIO.BCM)
-        else:
+        if not self.motion_sensor_enabled():
             self._logger.info(
                 "Pins not configured, won't work unless configured!")
+        self.motion_sensor_filament_moving = True
+        self.motion_sensor = None
 
     def on_after_startup(self):
         self._logger.info("Smart Filament Sensor started")
@@ -94,7 +86,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
     def motion_sensor_start(self):
         if self.motion_sensor_enabled() and self.motion_sensor == None:
-            self.motion_sensor = FilamentMotionSensor(1, "MotionSensorThread", self.motion_sensor_pin, self.motion_sensor_max_not_moving, pCallback=self.motion_sensor_callback)
+            self.motion_sensor = FilamentMotionSensor(1, "MotionSensorThread", self.motion_sensor_pin, self.motion_sensor_max_not_moving, self.mode, self._logger, pCallback=self.motion_sensor_callback)
             self.motion_sensor.start()
             self._logger.info("Motion sensor started")
 
@@ -106,11 +98,14 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
 # Events
     def on_event(self, event, payload):     
-        if event is Events.PRINT_RESUMED:
+        if event is Events.PRINT_STARTED:
+            self.print_started = True
+        elif event is Events.PRINT_RESUMED:
             self.motion_sensor_start()
         # Start motion sensor on first G1 command
         elif event is Events.Z_CHANGE:
-            self.motion_sensor_start()         
+            if(self.print_started):
+                self.motion_sensor_start()         
 
         # Disable sensor
         elif event in (
@@ -120,6 +115,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             Events.ERROR
         ):
             self._logger.info("%s: Disabling filament sensors." % (event))
+            self.print_started = False
             if self.motion_sensor_enabled():
                 self.motion_sensor_stop()
 
@@ -131,7 +127,8 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 # Sensor callbacks
     def motion_sensor_callback (self):
         self._logger.info("Motion sensor detected no movement")
-        self._printer.pause_print()        
+        #self._printer.pause_print()        
+        self._printer.commands("M600")
 
 # Plugin update methods
     #def get_update_information(self):

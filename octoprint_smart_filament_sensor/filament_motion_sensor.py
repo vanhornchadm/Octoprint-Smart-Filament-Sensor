@@ -9,17 +9,18 @@ class FilamentMotionSensor(threading.Thread):
     keepRunning = True
 
     # Initialize FilamentMotionSensor
-    def __init__(self, threadID, threadName, pUsedPin, pMaxNotMovingTime, pCallback=None):
+    def __init__(self, threadID, threadName, pUsedPin, pMaxNotMovingTime, pGPIO, pLogger, pCallback=None):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = threadName
         self.callback = pCallback
+        self._logger = pLogger
 
         self.used_pin = pUsedPin
         self.max_not_moving_time = pMaxNotMovingTime
         self.lastMotion = time.time()
         self.keepRunning = True
-        self.setupGPIO(self.motion)
+        self.setupGPIO(self.motion, pGPIO)
 
     # Override run method of threading
     def run(self):
@@ -41,9 +42,14 @@ class FilamentMotionSensor(threading.Thread):
         #print ("Stop thread: " + self.name)
 
     # Initialize GPIO pin
-    def setupGPIO(self, pCallback):
-        # use P1 header pin numbering convention
-        GPIO.setmode(GPIO.BOARD)
+    def setupGPIO(self, pCallback, pGPIO):
+        if pGPIO == 0:
+            self._logger.info("Using Board Mode")
+            GPIO.setmode(GPIO.BOARD)
+        else:
+            self._logger.info("Using BCM Mode")
+            GPIO.setmode(GPIO.BCM)
+
         # Set up the GPIO channels - one input and one output
         GPIO.setup(self.used_pin, GPIO.IN)
         # Add GPIO event detection and callback handler
