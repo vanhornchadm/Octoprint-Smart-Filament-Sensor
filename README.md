@@ -36,3 +36,9 @@ Since currently GCode command M600 is used to interrupt the print, it is recomme
 
 ### Octoprint - GCode Scripts
 If you do not want that the print is paused right on your print, I recommend to add a GCode Script for "After print job is paused". Also adding GCode script "Before print job is resumed" might be useful, in the case you hit the heatbed or print head during the change of the filament or removing the blockage.
+
+## Disclaimer
+I as author of this plugin am not responsible for any damages on your print or printer. As user you are responsible for a sensible usage of this plugin.
+
+## Outlook
+Detection based on distance
