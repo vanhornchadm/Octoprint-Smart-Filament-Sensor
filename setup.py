@@ -5,30 +5,30 @@
 
 # The plugin's identifier, has to be unique
 from setuptools import setup
-plugin_identifier = "filamentrevolutions"
+plugin_identifier = "smartfilamentsensor"
 
 # The plugin's python package, should be "octoprint_<plugin identifier>", has to be unique
-plugin_package = "octoprint_filamentrevolutions"
+plugin_package = "octoprint_smart_filament_sensor"
 
 # The plugin's human readable name. Can be overwritten within OctoPrint's internal data via __plugin_name__ in the
 # plugin module
-plugin_name = "Octoprint-Filament-Revolutions"
+plugin_name = "Octoprint-Smart-Filament-Sensor"
 
 # The plugin's version. Can be overwritten within OctoPrint's internal data via __plugin_version__ in the plugin module
 plugin_version = "1.0.0"
 
 # The plugin's description. Can be overwritten within OctoPrint's internal data via __plugin_description__ in the plugin
 # module
-plugin_description = """A revamped and rewritten filament monitor with jam and runout support that pauses the print when your filament runs out"""
+plugin_description = "A plugin to directly add Smart Filament Sensors like BigTreeTech Smart Filament Sensor to Octoprint."
 
 # The plugin's author. Can be overwritten within OctoPrint's internal data via __plugin_author__ in the plugin module
-plugin_author = "Jérôme Wiedemann"
+plugin_author = "Anni Lange"
 
 # The plugin's author's mail address.
-plugin_author_email = ""
+plugin_author_email = "maocypher@gmail.com"
 
 # The plugin's homepage URL. Can be overwritten within OctoPrint's internal data via __plugin_url__ in the plugin module
-plugin_url = "https://github.com/RomRider/Octoprint-Filament-Revolutions"
+plugin_url = "https://github.com/maocypher/Octoprint-Smart-Filament-Sensor"
 
 # The plugin's license. Can be overwritten within OctoPrint's internal data via __plugin_license__ in the plugin module
 plugin_license = "AGPLv3"
