@@ -133,22 +133,22 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         self._printer.commands("M600")
 
 # Plugin update methods
-    #def get_update_information(self):
-    #    return dict(
-    #        smart_filament_sensor=dict(
-    #            displayName="Smart Filament Sensor",
-    #            displayVersion=self._plugin_version,
+    def get_update_information(self):
+        return dict(
+            smartfilamentsensor=dict(
+                displayName="Smart Filament Sensor",
+                displayVersion=self._plugin_version,
 
                 # version check: github repository
-                #type="github_release",
-                #user="maocypher",
-                #repo="Octoprint-Filament-Revolutions",
-#                current=self._plugin_version,
+                type="github_release",
+                user="maocypher",
+                repo="Octoprint-Smart-Filament-Sensor",
+                current=self._plugin_version,
 
                 # update method: pip
-                #pip="https://github.com/RomRider/Octoprint-Filament-Revolutions/archive/{target_version}.zip"
- #           )
-  #      )
+                pip="https://github.com/RomRider/Octoprint-Filament-Revolutions/archive/{target_version}.zip"
+            )
+        )
 
 
 __plugin_name__ = "Smart Filament Sensor"
