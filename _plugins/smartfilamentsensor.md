@@ -22,10 +22,10 @@ tags:
 - Sensor
 - Filament
 
-#screenshots:
-#- url: url of a screenshot, /assets/img/...
-#  alt: alt-text of a screenshot
-#  caption: caption of a screenshot
+screenshots:
+- url: /assets/img/plugins/smartfilamentsensor/settings.png
+  alt: Screenshot of the plugin in settings
+  caption: Smart Filament Sensor settings
 #- url: url of another screenshot, /assets/img/...
 #  alt: alt-text of another screenshot
 #  caption: caption of another screenshot
