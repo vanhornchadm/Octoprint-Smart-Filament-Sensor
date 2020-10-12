@@ -101,6 +101,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         if event is Events.PRINT_STARTED:
             self.print_started = True
         elif event is Events.PRINT_RESUMED:
+            self.print_started = True
             self.motion_sensor_start()
         # Start motion sensor on first G1 command
         elif event is Events.Z_CHANGE:
@@ -121,6 +122,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
         # Disable motion sensor if paused
         elif event is Events.PRINT_PAUSED:
+            self.print_started = False
             if self.motion_sensor_enabled():
                 self.motion_sensor_stop()
 
