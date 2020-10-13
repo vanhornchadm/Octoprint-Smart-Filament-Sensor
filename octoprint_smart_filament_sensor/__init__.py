@@ -36,9 +36,9 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     def motion_sensor_detection_distance(self):
         return int(self._settings.get(["motion_sensor_detection_distance"]))
 
-    @property
-    def motion_sensor_sampling_time(self):
-        return int(self._settings.get(["motion_sensor_sampling_time"]))
+    #@property
+    #def motion_sensor_sampling_time(self):
+    #    return int(self._settings.get(["motion_sensor_sampling_time"]))
 
     @property
     def motion_sensor_pause_print(self):
@@ -53,9 +53,9 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     def mode(self):
         return int(self._settings.get(["mode"]))
 
-    @property
-    def send_gcode_only_once(self):
-        return self._settings.get_boolean(["send_gcode_only_once"])
+    #@property
+    #def send_gcode_only_once(self):
+    #    return self._settings.get_boolean(["send_gcode_only_once"])
 
 # Initialization methods
     def _setup_sensor(self):
@@ -84,7 +84,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             #Motion sensor
             motion_sensor_pin=-1,  # Default is no pin
             motion_sensor_detection_distance = 7, # Recommended detection distance from Marlin
-            motion_sensor_sampling_time = 250, # It is recommended to choose sampling time not too low, because it would block the printer
+            #motion_sensor_sampling_time = 250, # It is recommended to choose sampling time not too low, because it would block the printer
 
             mode=0,    # Board Mode
             #send_gcode_only_once=False,  # Default set to False for backward compatibility
@@ -103,7 +103,8 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
     def motion_sensor_start(self):
         if self.motion_sensor_enabled() and self.motion_sensor == None:
-            self.motion_sensor = FilamentMotionSensor(1, "MotionSensorThread", self._printer, (self.motion_sensor_sampling_time/1000))
+            #self.motion_sensor = FilamentMotionSensor(1, "MotionSensorThread", self._printer, (self.motion_sensor_sampling_time/1000))
+            self.motion_sensor = FilamentMotionSensor(1, "MotionSensorThread", self._printer)
             self.motion_sensor.start()
             self.send_code = False
             self.remaining_distance = self.motion_sensor_detection_distance
