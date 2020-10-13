@@ -118,14 +118,15 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
 # Sensor callbacks
     def printer_change_filament (self):
-        self._logger.info("Motion sensor detected no movement")
+        self._logger.debug("Motion sensor detected no movement")
         #self._printer.pause_print()        
         self._printer.commands("M600")
         self.send_code = True
 
     def reset_distance (self, pPin):
-        self._logger.info("Motion sensor detected movement")
-        self.remaining_distance = self.motion_sensor_detection_distance
+        self._logger.debug("Motion sensor detected movement")
+        if(self.remaining_distance < self.motion_sensor_detection_distance):
+            self.remaining_distance = self.motion_sensor_detection_distance
 
 # Events
     def on_event(self, event, payload):     
@@ -164,16 +165,15 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                 self.lastE = self.currentE
             self.currentE = payload.get('e')
 
+            self._logger.debug("Remaining Distance: " + str(self.remaining_distance))
+            self._logger.debug("LastE: " + str(self.lastE) + "; CurrentE: " + str(self.currentE))
             if(self.remaining_distance > 0):
                 # Calculate the remaining distance from detection distance
                 # currentE - lastE is the delta distance
                 self.remaining_distance = self.remaining_distance - (self.currentE - self.lastE)
-                self._logger.info("Remaining Distance: " + str(self.remaining_distance))
             else:
                 if(not self.send_code):
                     self.printer_change_filament()
-            
-            #time.sleep(0.250)
 
 # Plugin update methods
     def get_update_information(self):

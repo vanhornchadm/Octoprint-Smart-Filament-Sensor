@@ -27,9 +27,8 @@ This plugin can use the GPIO.BOARD or GPIO.BCM numbering scheme.
 After installation a restart of Octoprint is recommended.
 
 ## Configuration
-### Detection time
-Currently it is necessary to configure a maximum time period no filament movement was detected. This time could be depended on the print speed and maximum print line length. For the beginning - until I figured out how to estimate the best detection time - you can run a test print and messearue your maximum time and configure this value.
-The default value 45 seconds was estimated on max. print speed 10mm/s, for faster prints it could be smaller.
+### Detection distance
+Version 2.0 of this plugin detects the movement depending on the moved distance. Therefore it is necessary to configure a distance without movement being detected. In Marlin Firmware the default value is set to 7mm. According to this the value is set for the plugin.
 
 ### Octoprint - Firmware & Protocol
 Since currently GCode command M600 is used to interrupt the print, it is recommended to add M600 to the setting "Pausing commands".
