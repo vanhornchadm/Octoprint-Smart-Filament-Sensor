@@ -27,10 +27,17 @@
         </div>
     </div>
     <div class="control-group">
-        <label class="control-label">{{ _('Detection time:') }}</label>
-        <div class="controls" data-toggle="tooltip" title="{{ _('When a sensor state change happens, wait for this amount of time to wait for the signal to stabilize.') }}">
-            <input type="number" step="any" min="0" class="input-mini text-right" data-bind="value: settings.plugins.smartfilamentsensor.motion_sensor_max_not_moving">
-            <span class="add-on">sec</span>
+        <label class="control-label">{{ _('Detection distance:') }}</label>
+        <div class="controls" data-toggle="tooltip" title="{{ _('The distance that is allowed to be passed without chaning the sesnor status.') }}">
+            <input type="number" step="any" min="0" class="input-mini text-right" data-bind="value: settings.plugins.smartfilamentsensor.motion_sensor_detection_distance">
+            <span class="add-on">mm</span>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">{{ _('Sampling Time:') }}</label>
+        <div class="controls" data-toggle="tooltip" title="{{ _('The sampling time the passed distance is polled from the printer.') }}">
+            <input type="number" step="any" min="0" class="input-mini text-right" data-bind="value: settings.plugins.smartfilamentsensor.motion_sensor_sampling_time">
+            <span class="add-on">ms</span>
         </div>
     </div>
     <!--<div class="control-group">
