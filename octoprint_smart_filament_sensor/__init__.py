@@ -146,7 +146,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                 current=self._plugin_version,
 
                 # update method: pip
-                pip="https://github.com/RomRider/Octoprint-Filament-Revolutions/archive/{target_version}.zip"
+                pip="https://github.com/maocypher/Octoprint-Smart-Filament-Sensor/archive/master.zip"
             )
         )
 
@@ -159,10 +159,10 @@ def __plugin_load__():
     global __plugin_implementation__
     __plugin_implementation__ = SmartFilamentSensor()
 
-    #global __plugin_hooks__
-    #__plugin_hooks__ = {
-    #    "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
-    #}
+    global __plugin_hooks__
+    __plugin_hooks__ = {
+        "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
+    }
 
 
 def __plugin_check__():
