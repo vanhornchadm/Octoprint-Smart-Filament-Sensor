@@ -103,7 +103,8 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
     def motion_sensor_start(self):
         if self.motion_sensor_enabled() and self.motion_sensor == None:
-            self.motion_sensor = FilamentMotionSensor(1, "MotionSensorThread", self._printer, (self.motion_sensor_sampling_time/1000))
+            samplingTime = self.motion_sensor_sampling_time()/1000
+            self.motion_sensor = FilamentMotionSensor(1, "MotionSensorThread", self._printer, samplingTime)
             #self.motion_sensor = FilamentMotionSensor(1, "MotionSensorThread", self._printer)
             self.motion_sensor.start()
             self.send_code = False
