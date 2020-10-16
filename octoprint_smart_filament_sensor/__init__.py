@@ -37,8 +37,8 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         return int(self._settings.get(["motion_sensor_detection_distance"]))
 
     #@property
-    #def motion_sensor_sampling_time(self):
-    #    return int(self._settings.get(["motion_sensor_sampling_time"]))
+    def motion_sensor_sampling_time(self):
+        return int(self._settings.get(["motion_sensor_sampling_time"]))
 
     @property
     def motion_sensor_pause_print(self):
@@ -84,7 +84,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             #Motion sensor
             motion_sensor_pin=-1,  # Default is no pin
             motion_sensor_detection_distance = 7, # Recommended detection distance from Marlin
-            #motion_sensor_sampling_time = 250, # It is recommended to choose sampling time not too low, because it would block the printer
+            motion_sensor_sampling_time = 750, # It is recommended to choose sampling time not too low, because it would block the printer
 
             mode=0,    # Board Mode
             #send_gcode_only_once=False,  # Default set to False for backward compatibility
@@ -103,8 +103,8 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
     def motion_sensor_start(self):
         if self.motion_sensor_enabled() and self.motion_sensor == None:
-            #self.motion_sensor = FilamentMotionSensor(1, "MotionSensorThread", self._printer, (self.motion_sensor_sampling_time/1000))
-            self.motion_sensor = FilamentMotionSensor(1, "MotionSensorThread", self._printer)
+            self.motion_sensor = FilamentMotionSensor(1, "MotionSensorThread", self._printer, (self.motion_sensor_sampling_time/1000))
+            #self.motion_sensor = FilamentMotionSensor(1, "MotionSensorThread", self._printer)
             self.motion_sensor.start()
             self.send_code = False
             self.remaining_distance = self.motion_sensor_detection_distance
@@ -118,13 +118,13 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
 # Sensor callbacks
     def printer_change_filament (self):
-        self._logger.debug("Motion sensor detected no movement")
+        #self._logger.debug("Motion sensor detected no movement")
         #self._printer.pause_print()        
         self._printer.commands("M600")
         self.send_code = True
 
     def reset_distance (self, pPin):
-        self._logger.debug("Motion sensor detected movement")
+        #self._logger.debug("Motion sensor detected movement")
         if(self.remaining_distance < self.motion_sensor_detection_distance):
             self.remaining_distance = self.motion_sensor_detection_distance
 
@@ -165,7 +165,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                 self.lastE = self.currentE
             self.currentE = payload.get('e')
 
-            self._logger.debug("Remaining Distance: " + str(self.remaining_distance))
+            #self._logger.debug("Remaining Distance: " + str(self.remaining_distance))
             #self._logger.info("LastE: " + str(self.lastE) + "; CurrentE: " + str(self.currentE))
             if(self.remaining_distance > 0):
                 # Calculate the remaining distance from detection distance
@@ -176,7 +176,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                     # Sometimes the polling of M114 is inaccurate so that with the next poll
                     # very high distances are put back followed by zero distance changes
                     deltaDistance = deltaDistance % self.motion_sensor_detection_distance
-                self._logger.debug("Delta Distance: " + str(deltaDistance))
+                #self._logger.debug("Delta Distance: " + str(deltaDistance))
                 self.remaining_distance = self.remaining_distance - deltaDistance
             else:
                 if(not self.send_code):

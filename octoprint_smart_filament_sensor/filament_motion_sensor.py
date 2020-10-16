@@ -5,12 +5,12 @@ class FilamentMotionSensor(threading.Thread):
     keepRunning = True
 
     # Initialize FilamentMotionSensor
-    #def __init__(self, threadID, threadName, pPrinter, pSamplingTime):
-    def __init__(self, threadID, threadName, pPrinter):
+    def __init__(self, threadID, threadName, pPrinter, pSamplingTime):
+    #def __init__(self, threadID, threadName, pPrinter):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = threadName
-        #self.pSamplingTime = pSamplingTime
+        self.samplingTime = pSamplingTime
         self._printer = pPrinter
 
     # Override run method of threading
@@ -18,5 +18,6 @@ class FilamentMotionSensor(threading.Thread):
     def run(self):
         while self.keepRunning:
             self._printer.commands("M114")
-            time.sleep(0.500)
+            #time.sleep(0.500)
+            time.sleep(self.samplingTime)
         
