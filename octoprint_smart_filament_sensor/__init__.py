@@ -166,11 +166,18 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             self.currentE = payload.get('e')
 
             self._logger.debug("Remaining Distance: " + str(self.remaining_distance))
-            self._logger.debug("LastE: " + str(self.lastE) + "; CurrentE: " + str(self.currentE))
+            #self._logger.info("LastE: " + str(self.lastE) + "; CurrentE: " + str(self.currentE))
             if(self.remaining_distance > 0):
                 # Calculate the remaining distance from detection distance
                 # currentE - lastE is the delta distance
-                self.remaining_distance = self.remaining_distance - (self.currentE - self.lastE)
+                deltaDistance = self.currentE - self.lastE
+                if(deltaDistance > self.motion_sensor_detection_distance):
+                    # Calculate the deltaDistance modulo the motion_sensor_detection_distance
+                    # Sometimes the polling of M114 is inaccurate so that with the next poll
+                    # very high distances are put back followed by zero distance changes
+                    deltaDistance = deltaDistance % self.motion_sensor_detection_distance
+                self._logger.debug("Delta Distance: " + str(deltaDistance))
+                self.remaining_distance = self.remaining_distance - deltaDistance
             else:
                 if(not self.send_code):
                     self.printer_change_filament()

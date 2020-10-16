@@ -18,5 +18,5 @@ class FilamentMotionSensor(threading.Thread):
     def run(self):
         while self.keepRunning:
             self._printer.commands("M114")
-            time.sleep(0.250)
+            time.sleep(0.500)
         
