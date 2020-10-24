@@ -197,14 +197,14 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                 current=self._plugin_version,
 
                 # update method: pip
-                pip="https://github.com/RomRider/Octoprint-Filament-Revolutions/archive/{target_version}.zip"
+                pip="https://github.com/maocypher/Octoprint-Smart-Filament-Sensor/archive/master.zip"
             )
         )
 
 
 __plugin_name__ = "Smart Filament Sensor"
 __plugin_version__ = "1.1.0"
-
+__plugin_pythoncompat__ = ">=2.7,<4"
 
 def __plugin_load__():
     global __plugin_implementation__
