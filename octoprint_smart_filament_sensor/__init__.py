@@ -127,7 +127,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
             # Distance detection
             if (self.detection_method == 1):
-                samplingTime = self.motion_sensor_sampling_time()/1000
+                samplingTime = self.motion_sensor_sampling_time/1000
                 self.motion_sensor = FilamentMotionSensorDistanceDetection(1, "MotionSensorDistanceDetectionThread", self._printer, samplingTime)
                 self.remaining_distance = self.motion_sensor_detection_distance
                 self.motion_sensor.start()
