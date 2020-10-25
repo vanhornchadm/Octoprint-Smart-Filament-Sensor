@@ -106,8 +106,8 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             detection_method = 0, # 0 = timeout detection, 1 = distance detection
 
             # Distance detection
-            motion_sensor_detection_distance = 7, # Recommended detection distance from Marlin
-            motion_sensor_sampling_time = 5000, # It is recommended to choose sampling time not too low, because it would block the printer
+            motion_sensor_detection_distance = 3, # Recommended detection distance from Marlin would be 7
+            motion_sensor_sampling_time = 10000, # It is recommended to choose sampling time not too low, because it would block the printer
 
             # Timeout detection
             motion_sensor_max_not_moving=45,  # Maximum time no movement is detected - default continously
