@@ -22,17 +22,63 @@
         </div>
     </div>
     <!-- GPIO pin on the raspberry -->
+    <!--
     <div class="control-group">
-        <label class="control-label">{{ _('Motion Sensor GPIO Pin:') }}</label>
-        <div class="controls" data-toggle="tooltip" title="{{ _('Which Raspberry Pi GPIO pin your switch is attached to (-1 disables the plugin)') }}">
-            <input type="number" step="any" min="0" class="input-mini text-right" data-bind="value: settings.plugins.smartfilamentsensor.motion_sensor_pin">
+        <label class="control-label">{{ _('Number of sensors:') }}</label>
+        <div class="controls" data-toggle="tooltip" title="{{ _('The number of used motions sensor') }}">
+            <input type="number" step="any" min="0" class="input-mini text-right" data-bind="value: settings.plugins.smartfilamentsensor.motion_sensor_number">
+            <span class="help-block"><small>The number of used motion sensors</small></span>
         </div>
     </div>
-    <!-- Enable / Disable detection -->
+    -->
     <div class="control-group">
+        <label class="control-label">{{ _('Motion Sensor GPIO Pin 1:') }}</label>
+        <div class="controls" data-toggle="tooltip" title="{{ _('Which Raspberry Pi GPIO pin your switch is attached to (-1 disables the plugin)') }}">
+            <input type="number" step="any" min="0" class="input-mini text-right" data-bind="value: settings.plugins.smartfilamentsensor.motion_sensor_pin_0">
+        </div>
+
         <div class="controls" data-toggle="tooltip" title="{{ _('Enable or disble the sensor usage.') }}">
             <label class="checkbox">
-                <input type="checkbox" data-bind="checked: settings.plugins.smartfilamentsensor.motion_sensor_enabled"> {{ _('Enable Sensor') }}
+                <input type="checkbox" data-bind="checked: settings.plugins.smartfilamentsensor.motion_sensor_enabled_0"> {{ _('Enable Sensor') }}
+            </label>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('Motion Sensor GPIO Pin 2:') }}</label>
+        <div class="controls" data-toggle="tooltip" title="{{ _('Which Raspberry Pi GPIO pin your switch is attached to (-1 disables the plugin)') }}">
+            <input type="number" step="any" min="0" class="input-mini text-right" data-bind="value: settings.plugins.smartfilamentsensor.motion_sensor_pin_1">
+        </div>
+
+        <div class="controls" data-toggle="tooltip" title="{{ _('Enable or disble the sensor usage.') }}">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.smartfilamentsensor.motion_sensor_enabled_1"> {{ _('Enable Sensor') }}
+            </label>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('Motion Sensor GPIO Pin 3:') }}</label>
+        <div class="controls" data-toggle="tooltip" title="{{ _('Which Raspberry Pi GPIO pin your switch is attached to (-1 disables the plugin)') }}">
+            <input type="number" step="any" min="0" class="input-mini text-right" data-bind="value: settings.plugins.smartfilamentsensor.motion_sensor_pin_2">
+        </div>
+
+        <div class="controls" data-toggle="tooltip" title="{{ _('Enable or disble the sensor usage.') }}">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.smartfilamentsensor.motion_sensor_enabled_2"> {{ _('Enable Sensor') }}
+            </label>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('Motion Sensor GPIO Pin 4:') }}</label>
+        <div class="controls" data-toggle="tooltip" title="{{ _('Which Raspberry Pi GPIO pin your switch is attached to (-1 disables the plugin)') }}">
+            <input type="number" step="any" min="0" class="input-mini text-right" data-bind="value: settings.plugins.smartfilamentsensor.motion_sensor_pin_3">
+        </div>
+
+        <div class="controls" data-toggle="tooltip" title="{{ _('Enable or disble the sensor usage.') }}">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.smartfilamentsensor.motion_sensor_enabled_3"> {{ _('Enable Sensor') }}
             </label>
         </div>
     </div>
