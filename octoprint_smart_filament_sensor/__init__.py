@@ -110,7 +110,17 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             self._logger.info("Using BCM Mode")
             GPIO.setmode(GPIO.BCM)
 
-        GPIO.setup(self.motion_sensor_pin_0, GPIO.IN)
+        if(self.motion_sensor_enabled_0 and self.motion_sensor_pin_0 > 0):
+            GPIO.setup(self.motion_sensor_pin_0, GPIO.IN)
+
+        if(self.motion_sensor_enabled_1 and self.motion_sensor_pin_1 > 0):
+            GPIO.setup(self.motion_sensor_pin_1, GPIO.IN)
+
+        if(self.motion_sensor_enabled_2 and self.motion_sensor_pin_2 > 0):
+            GPIO.setup(self.motion_sensor_pin_2, GPIO.IN)
+
+        if(self.motion_sensor_enabled_3 and self.motion_sensor_pin_3 > 0):
+            GPIO.setup(self.motion_sensor_pin_3, GPIO.IN)
 
         # Add reset_distance if detection_method is distance_detection
         if (self.detection_method == 1):
@@ -170,7 +180,8 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
             # Timeout detection
             elif (self.detection_method == 0):
-                self.motion_sensor = FilamentMotionSensorTimeoutDetection(1, "MotionSensorTimeoutDetectionThread", self.motion_sensor_pin_0, self.motion_sensor_max_not_moving, self._logger, pCallback=self.printer_change_filament)
+                self.motion_sensor = FilamentMotionSensorTimeoutDetection(1, "MotionSensorTimeoutDetectionThread", self.motion_sensor_max_not_moving, self._logger, 
+                    self.motion_sensor_pin_0, self.motion_sensor_pin_1, self.motion_sensor_pin_2, self.motion_sensor_pin_3, pCallback=self.printer_change_filament)
                 self.motion_sensor.start()
                 self._logger.info("Motion sensor started: Timeout detection")
 

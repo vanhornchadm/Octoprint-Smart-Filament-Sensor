@@ -9,19 +9,32 @@ class FilamentMotionSensorTimeoutDetection(threading.Thread):
     keepRunning = True
 
     # Initialize FilamentMotionSensor
-    def __init__(self, threadID, threadName, pUsedPin, pMaxNotMovingTime, pLogger, pCallback=None):
+    def __init__(self, threadID, threadName, pMaxNotMovingTime, pLogger, pUsedPin_0=-1, pUsedPin_1=-1, pUsedPin_2=-1, pUsedPin_3=-1, pCallback=None):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = threadName
         self.callback = pCallback
         self._logger = pLogger
 
-        self.used_pin = pUsedPin
+        self.used_pin_0 = pUsedPin_0
+        self.used_pin_1 = pUsedPin_1
+        self.used_pin_2 = pUsedPin_2
+        self.used_pin_3 = pUsedPin_3
         self.max_not_moving_time = pMaxNotMovingTime
         self.lastMotion = time.time()
         self.keepRunning = True
 
-        GPIO.add_event_detect(self.used_pin, GPIO.BOTH, callback=self.motion)
+        if(self.used_pin_0 > 0):
+            GPIO.add_event_detect(self.used_pin_0, GPIO.BOTH, callback=self.motion)
+
+        if(self.used_pin_1 > 0):
+            GPIO.add_event_detect(self.used_pin_1, GPIO.BOTH, callback=self.motion)
+
+        if(self.used_pin_2 > 0):
+            GPIO.add_event_detect(self.used_pin_2, GPIO.BOTH, callback=self.motion)
+        
+        if(self.used_pin_3 > 0):
+            GPIO.add_event_detect(self.used_pin_3, GPIO.BOTH, callback=self.motion)
 
     # Override run method of threading
     def run(self):
@@ -34,7 +47,17 @@ class FilamentMotionSensorTimeoutDetection(threading.Thread):
 
             time.sleep(0.250)
 
-        GPIO.remove_event_detect(self.used_pin)
+        if(self.used_pin_0 > 0):
+            GPIO.remove_event_detect(self.used_pin_0)
+
+        if(self.used_pin_1 > 0):
+            GPIO.remove_event_detect(self.used_pin_1)
+
+        if(self.used_pin_2 > 0):
+            GPIO.remove_event_detect(self.used_pin_2)
+        
+        if(self.used_pin_3 > 0):
+            GPIO.remove_event_detect(self.used_pin_3)
 
     # Eventhandler for GPIO filament sensor signal
     # The new state of the GPIO pin is read and determinated.
