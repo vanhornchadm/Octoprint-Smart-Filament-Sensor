@@ -110,22 +110,6 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             self._logger.info("Using BCM Mode")
             GPIO.setmode(GPIO.BCM)
 
-        if(self.motion_sensor_enabled_0 and self.motion_sensor_pin_0 > 0):
-            GPIO.setup(self.motion_sensor_pin_0, GPIO.IN)
-
-        if(self.motion_sensor_enabled_1 and self.motion_sensor_pin_1 > 0):
-            GPIO.setup(self.motion_sensor_pin_1, GPIO.IN)
-
-        if(self.motion_sensor_enabled_2 and self.motion_sensor_pin_2 > 0):
-            GPIO.setup(self.motion_sensor_pin_2, GPIO.IN)
-
-        if(self.motion_sensor_enabled_3 and self.motion_sensor_pin_3 > 0):
-            GPIO.setup(self.motion_sensor_pin_3, GPIO.IN)
-
-        # Add reset_distance if detection_method is distance_detection
-        if (self.detection_method == 1):
-            GPIO.add_event_detect(self.motion_sensor_pin_0, GPIO.BOTH, callback=self.reset_distance)
-
         if self.motion_sensor_is_enabled() == False:
             self._logger.warn("Motion sensors are deactivated")
         self.motion_sensor_filament_moving = True
@@ -172,6 +156,32 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
             # Distance detection
             if (self.detection_method == 1):
+                if(self.motion_sensor_enabled_0 and self.motion_sensor_pin_0 > 0):
+                    GPIO.setup(self.motion_sensor_pin_0, GPIO.IN)
+
+                if(self.motion_sensor_enabled_1 and self.motion_sensor_pin_1 > 0):
+                    GPIO.setup(self.motion_sensor_pin_1, GPIO.IN)
+
+                if(self.motion_sensor_enabled_2 and self.motion_sensor_pin_2 > 0):
+                    GPIO.setup(self.motion_sensor_pin_2, GPIO.IN)
+
+                if(self.motion_sensor_enabled_3 and self.motion_sensor_pin_3 > 0):
+                    GPIO.setup(self.motion_sensor_pin_3, GPIO.IN)
+
+                # Add reset_distance if detection_method is distance_detection
+                if(self.motion_sensor_enabled_0 and self.motion_sensor_pin_0 > 0):
+                    GPIO.add_event_detect(self.motion_sensor_pin_0, GPIO.BOTH, callback=self.reset_distance)
+
+                if(self.motion_sensor_enabled_1 and self.motion_sensor_pin_1 > 0):
+                    GPIO.add_event_detect(self.motion_sensor_pin_1, GPIO.BOTH, callback=self.reset_distance)
+
+                if(self.motion_sensor_enabled_2 and self.motion_sensor_pin_2 > 0):
+                    GPIO.add_event_detect(self.motion_sensor_pin_2, GPIO.BOTH, callback=self.reset_distance)
+
+                if(self.motion_sensor_enabled_3 and self.motion_sensor_pin_3 > 0):
+                    GPIO.add_event_detect(self.motion_sensor_pin_3, GPIO.BOTH, callback=self.reset_distance)
+
+
                 samplingTime = self.motion_sensor_sampling_time/1000
                 self.motion_sensor = FilamentMotionSensorDistanceDetection(1, "MotionSensorDistanceDetectionThread", self._printer, samplingTime)
                 self.remaining_distance = self.motion_sensor_detection_distance
@@ -192,6 +202,19 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             self.motion_sensor.keepRunning = False
             self.motion_sensor = None
             self._logger.info("Motion sensor stopped")
+
+            if (self.detection_method == 1):
+                if(self.motion_sensor_enabled_0 and self.motion_sensor_pin_0 > 0):
+                    GPIO.remove_event_detect(self.motion_sensor_pin_0)
+
+                if(self.motion_sensor_enabled_1 and self.motion_sensor_pin_1 > 0):
+                    GPIO.remove_event_detect(self.motion_sensor_pin_1)
+
+                if(self.motion_sensor_enabled_2 and self.motion_sensor_pin_2 > 0):
+                    GPIO.remove_event_detect(self.motion_sensor_pin_2)
+
+                if(self.motion_sensor_enabled_3 and self.motion_sensor_pin_3 > 0):
+                    GPIO.remove_event_detect(self.motion_sensor_pin_3)
 
     def motion_sensor_is_enabled(self):
         if(self.motion_sensor_enabled_0 or
