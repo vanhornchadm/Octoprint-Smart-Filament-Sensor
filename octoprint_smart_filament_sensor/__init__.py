@@ -108,12 +108,6 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             self._logger.info("Using BCM Mode")
             GPIO.setmode(GPIO.BCM)
 
-        GPIO.setup(self.motion_sensor_pin, GPIO.IN)
-
-        # Add reset_distance if detection_method is distance_detection
-        if (self.detection_method == 1):
-            GPIO.add_event_detect(self.motion_sensor_pin, GPIO.BOTH, callback=self.reset_distance)
-
         if self.motion_sensor_is_enabled() == False:
             self._logger.warn("Motion sensor is deactivated")
 
@@ -159,12 +153,21 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     def motion_sensor_start(self):
         if self.motion_sensor == None:
             if self.motion_sensor == None:
-            self._logger.debug("Sensor enabled: " + str(self.motion_sensor_enabled))
+                self._logger.debug("Sensor 0 enabled: " + str(self.motion_sensor_enabled_0))
+                self._logger.debug("Sensor 1 enabled: " + str(self.motion_sensor_enabled_1))
+                self._logger.debug("Sensor 2 enabled: " + str(self.motion_sensor_enabled_2))
+                self._logger.debug("Sensor 3 enabled: " + str(self.motion_sensor_enabled_3))
+
             if (self.mode == 0):
                 self._logger.debug("GPIO mode: Board Mode")
             else:
                 self._logger.debug("GPIO mode: BCM Mode")
-            self._logger.debug("GPIO pin: " + str(self.motion_sensor_pin))
+
+            self._logger.debug("GPIO pin 0: " + str(self.motion_sensor_pin_0))
+            self._logger.debug("GPIO pin 1: " + str(self.motion_sensor_pin_1))
+            self._logger.debug("GPIO pin 2: " + str(self.motion_sensor_pin_2))
+            self._logger.debug("GPIO pin 3: " + str(self.motion_sensor_pin_3))
+
             if(self.detection_method == 0):
                 self._logger.debug("Detection Mode: Timeout detection")
                 self._logger.debug("Timeout: " + str(self.motion_sensor_max_not_moving))
