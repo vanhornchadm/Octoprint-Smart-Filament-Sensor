@@ -25,6 +25,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         self.currentE = -1
         self.START_DISTANCE_OFFSET = 7
         self.send_code = False
+        self.absolut_extrusion = True
 
 #Properties
     @property
@@ -185,20 +186,27 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     # Calculate the remaining distance
     def calc_distance(self, pE):
         if (self.detection_method == 1):
-            # LastE is not used and set to the same value as currentE
-            if (self.lastE == -1):
-                self.lastE = pE
-            else:
-                self.lastE = self.currentE
-            self.currentE = pE
+            # Only with absolute extrusion the delta distance must be calculated
+            if (self.absolut_extrusion):
+                # LastE is not used and set to the same value as currentE
+                if (self.lastE == -1):
+                    self.lastE = pE
+                else:
+                    self.lastE = self.currentE
+                self.currentE = pE
+
+                self._logger.debug("LastE: " + str(self.lastE) + "; CurrentE: " + str(self.currentE))
 
             self._logger.debug("Remaining Distance: " + str(self.remaining_distance))
-            self._logger.debug("LastE: " + str(self.lastE) + "; CurrentE: " + str(self.currentE))
 
             if(self.remaining_distance > 0):
                 # Calculate the remaining distance from detection distance
                 # currentE - lastE is the delta distance
-                deltaDistance = self.currentE - self.lastE
+                if(self.absolut_extrusion):
+                    deltaDistance = self.currentE - self.lastE
+                # With relative extrusion the current extrusion value is the delta distance
+                else:
+                    deltaDistance = float(pE)
                 if(deltaDistance > self.motion_sensor_detection_distance):
                     # Calculate the deltaDistance modulo the motion_sensor_detection_distance
                     # Sometimes the polling of M114 is inaccurate so that with the next poll
@@ -290,6 +298,14 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                 if(self.detection_method == 1):
                     self.init_distance_detection()
                 self._logger.debug("G92: Reset Extruders")
+
+            elif(gcode == "M82"):
+                self.absolut_extrusion = True
+                self._logger.debug("M82: Absolut extrusion")
+
+            elif(gcode == "M83"):
+                self.absolut_extrusion = False
+                self._logger.debug("M83: Relative extrusion")
 
         return cmd
 
