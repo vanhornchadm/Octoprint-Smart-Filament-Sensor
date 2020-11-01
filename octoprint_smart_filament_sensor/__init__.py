@@ -23,6 +23,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         self.remaining_distance = self.motion_sensor_detection_distance
         self.lastE = -1
         self.currentE = -1
+        self.START_DISTANCE_OFFSET = 7
         self.send_code = False
 
 #Properties
@@ -101,7 +102,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             detection_method = 0, # 0 = timeout detection, 1 = distance detection
 
             # Distance detection
-            motion_sensor_detection_distance = 20, # Recommended detection distance from Marlin would be 7
+            motion_sensor_detection_distance = 15, # Recommended detection distance from Marlin would be 7
 
             # Timeout detection
             motion_sensor_max_not_moving=45,  # Maximum time no movement is detected - default continously
@@ -174,7 +175,12 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     def init_distance_detection(self):
         self.lastE = float(-1)
         self.currentE = float(0)
-        self.remaining_distance = float(self.motion_sensor_detection_distance)
+        self.reset_remainin_distance()
+
+    # Reset the remaining distance on start or resume
+    # START_DISTANCE_OFFSET is used for the (re-)start sequence
+    def reset_remainin_distance(self):
+        self.remaining_distance = float(self.motion_sensor_detection_distance) + self.START_DISTANCE_OFFSET
 
     # Calculate the remaining distance
     def calc_distance(self, pE):
@@ -216,7 +222,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
             # If distance detection is used reset the remaining distance, because otherwise the print is not resuming anymore
             if(self.detection_method == 1):
-                self.remaining_distance = float(self.motion_sensor_detection_distance)
+                self.reset_remainin_distance()
 
             self.motion_sensor_start()
 
@@ -270,7 +276,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     # G0 or G1: Caluclate the remaining distance
     def distance_detection(self, comm_instance, phase, cmd, cmd_type, gcode, *args, **kwargs):
         # Only performed if distance detection is used
-        if(self.detection_method == 1):
+        if(self.detection_method == 1 and self.motion_sensor_enabled):
             if(gcode == "G0" or gcode == "G1"):
                 commands = cmd.split(" ")
 
