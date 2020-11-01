@@ -301,11 +301,11 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
             elif(gcode == "M82"):
                 self.absolut_extrusion = True
-                self._logger.debug("M82: Absolut extrusion")
+                self._logger.info("M82: Absolut extrusion")
 
             elif(gcode == "M83"):
                 self.absolut_extrusion = False
-                self._logger.debug("M83: Relative extrusion")
+                self._logger.info("M83: Relative extrusion")
 
         return cmd
 
