@@ -36,13 +36,6 @@
             </label>
         </div>
     </div>
-    <!--<div class="control-group">
-        <div class="controls" data-toggle="tooltip" title="{{ _('With this option checked, the plugin will ignore subsequent reports of out of filament until the print is resumed again.') }}">
-            <label class="checkbox">
-                <input type="checkbox" data-bind="checked: settings.plugins.smartfilamentsensor.send_gcode_only_once"> {{ _('Send GCODE only once when out of filament.') }}
-            </label>
-        </div>
-    </div>-->
     <!-- Timeout detection -->
     <h6>{{ _('Timeout detection') }}</h6>
     <div class="control-group">
@@ -61,14 +54,7 @@
         <div class="controls" data-toggle="tooltip" title="{{ _('The distance that is allowed to be passed without chaning the sesnor status.') }}">
             <input type="number" step="any" min="0" class="input-mini text-right" data-bind="value: settings.plugins.smartfilamentsensor.motion_sensor_detection_distance">
             <span class="add-on">mm</span>
-        </div>
-    </div>
-    <div class="control-group">
-        <label class="control-label">{{ _('Sampling Time:') }}</label>
-        <div class="controls" data-toggle="tooltip" title="{{ _('The sampling time the passed distance is polled from the printer.') }}">
-            <input type="number" step="any" min="0" class="input-mini text-right" data-bind="value: settings.plugins.smartfilamentsensor.motion_sensor_sampling_time">
-            <span class="add-on">ms</span>
-            <span class="help-block"><small>In this period M114 command is sent to the printer. Don't choose the value too small, because it could negatively effect the print quality and even cause stuttering.</small></span>
+            <span class="help-block"><small>GCode commands that are sent to the printer are interpreted. Don't choose this value too small, because it could make the detection too sensitive.</small></span>
         </div>
     </div>
     <!--<div class="control-group">
