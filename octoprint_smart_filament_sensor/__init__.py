@@ -234,8 +234,17 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         )
 
 
+ def test(self, comm_instance, phase, cmd, cmd_type, gcode, *args, **kwargs):
+        if(gcode == "G1"):
+            self._logger.debug("G1: " + cmd)
+        elif (gcode == "G0"):
+            self._logger.debug("G0: " + cmd)
+
+        return cmd
+
+
 __plugin_name__ = "Smart Filament Sensor"
-__plugin_version__ = "1.1.0"
+__plugin_version__ = "1.1.2"
 __plugin_pythoncompat__ = ">=2.7,<4"
 
 def __plugin_load__():
@@ -244,8 +253,10 @@ def __plugin_load__():
 
     global __plugin_hooks__
     __plugin_hooks__ = {
-        "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
+        "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information,
+        "octoprint.comm.protocol.gcode.sent": __plugin_implementation__.test
     }
+
 
 
 def __plugin_check__():
