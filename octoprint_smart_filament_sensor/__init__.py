@@ -11,7 +11,8 @@ from octoprint_smart_filament_sensor.filament_motion_sensor_timeout_detection im
 class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                                  octoprint.plugin.EventHandlerPlugin,
                                  octoprint.plugin.TemplatePlugin,
-                                 octoprint.plugin.SettingsPlugin):
+                                 octoprint.plugin.SettingsPlugin,
+                                 octoprint.plugin.AssetPlugin):
 
     def initialize(self):
         self._logger.info("Running RPi.GPIO version '{0}'".format(GPIO.VERSION))
@@ -116,6 +117,9 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
     def get_template_configs(self):
         return [dict(type="settings", custom_bindings=False)]
+
+    def get_assets(self):
+        return dict(js=["js/smartfilamentsensor_sidebar.js"])
 
 # Sensor methods
     # Starts the motion sensor if the sensors are enabled
@@ -311,7 +315,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
 
 __plugin_name__ = "Smart Filament Sensor"
-__plugin_version__ = "1.1.2"
+__plugin_version__ = "1.1.3"
 __plugin_pythoncompat__ = ">=2.7,<4"
 
 def __plugin_load__():
