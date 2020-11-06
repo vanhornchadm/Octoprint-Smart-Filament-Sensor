@@ -7,6 +7,7 @@ from time import sleep
 from flask import jsonify
 import json
 from octoprint_smart_filament_sensor.filament_motion_sensor_timeout_detection import FilamentMotionSensorTimeoutDetection
+from octoprint_smart_filament_sensor.data import SmartFilamentSensorDetectionData
 
 class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                                  octoprint.plugin.EventHandlerPlugin,
@@ -21,12 +22,15 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         GPIO.setwarnings(False)        # Disable GPIO warnings
 
         self.print_started = False
-        self.remaining_distance = self.motion_sensor_detection_distance
+        #self.remaining_distance = self.motion_sensor_detection_distance
         self.lastE = -1
         self.currentE = -1
         self.START_DISTANCE_OFFSET = 7
         self.send_code = False
         self.absolut_extrusion = True
+        self._data = SmartFilamentSensorDetectionData(self.motion_sensor_detection_distance, True)
+
+        self._plugin_manager.send_plugin_message(self._identifier, self._data.toJSON())
 
 #Properties
     @property
@@ -91,9 +95,13 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         self.motion_sensor_filament_moving = True
         self.motion_sensor_thread = None
 
+        self._data.remaining_distance = self.motion_sensor_detection_distance
+        self._plugin_manager.send_plugin_message(self._identifier, self._data.toJSON())
+
     def on_after_startup(self):
         self._logger.info("Smart Filament Sensor started")
         self._setup_sensor()
+        self._plugin_manager.send_plugin_message(self._identifier, self._data.toJSON())
 
     def get_settings_defaults(self):
         return dict(
@@ -173,8 +181,9 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     # Reset the distance, if the remaining distance is smaller than the new value
     def reset_distance (self, pPin):
         self._logger.debug("Motion sensor detected movement")
-        if(self.remaining_distance < self.motion_sensor_detection_distance):
-            self.remaining_distance = self.motion_sensor_detection_distance
+        if(self._data.remaining_distance < self.motion_sensor_detection_distance):
+            self._data.remaining_distance = self.motion_sensor_detection_distance
+            self._plugin_manager.send_plugin_message(self._identifier, self._data.toJSON())
 
     # Initialize the distance detection values
     def init_distance_detection(self):
@@ -185,7 +194,8 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     # Reset the remaining distance on start or resume
     # START_DISTANCE_OFFSET is used for the (re-)start sequence
     def reset_remainin_distance(self):
-        self.remaining_distance = float(self.motion_sensor_detection_distance) + self.START_DISTANCE_OFFSET
+        self._data.remaining_distance = (float(self.motion_sensor_detection_distance) + self.START_DISTANCE_OFFSET)
+        self._plugin_manager.send_plugin_message(self._identifier, self._data.toJSON())
 
     # Calculate the remaining distance
     def calc_distance(self, pE):
@@ -201,9 +211,9 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
                 self._logger.debug("LastE: " + str(self.lastE) + "; CurrentE: " + str(self.currentE))
 
-            self._logger.debug("Remaining Distance: " + str(self.remaining_distance))
+            self._logger.debug("Remaining Distance: " + str(self._data.remaining_distance))
 
-            if(self.remaining_distance > 0):
+            if(self._data.remaining_distance > 0):
                 # Calculate the remaining distance from detection distance
                 # currentE - lastE is the delta distance
                 if(self.absolut_extrusion):
@@ -218,7 +228,9 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                     deltaDistance = deltaDistance % self.motion_sensor_detection_distance
 
                 self._logger.debug("Delta Distance: " + str(deltaDistance))
-                self.remaining_distance = (self.remaining_distance - deltaDistance)
+                self._data.remaining_distance = (self._data.remaining_distance - deltaDistance)
+                self._plugin_manager.send_plugin_message(self._identifier, self._data.toJSON())
+
             else:
                 self.printer_change_filament()
 
