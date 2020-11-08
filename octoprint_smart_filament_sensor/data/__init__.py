@@ -8,7 +8,7 @@ class SmartFilamentSensorDetectionData(object):
     @remaining_distance.setter
     def remaining_distance(self, value):
         self._remaining_distance = value
-        self.callbackRemainingDistance()
+        self.callbackUpdateUI()
 
     @property
     def print_started(self):
@@ -50,17 +50,27 @@ class SmartFilamentSensorDetectionData(object):
     def last_motion_detected(self, value):
         self._last_motion_detected = value
 
+    @property
+    def filament_moving(self):
+        return self._filament_moving
+
+    @filament_moving.setter
+    def filament_moving(self, value):
+        self._filament_moving = value
+        self.callbackUpdateUI()
+
     def __init__(self, pRemainingDistance, pAbsolutExtrusion, pCallback=None):
         self._remaining_distance = pRemainingDistance
         self._absolut_extrusion = pAbsolutExtrusion
         self.START_DISTANCE_OFFSET = 7
-        self.callbackRemainingDistance = pCallback
+        self.callbackUpdateUI = pCallback
 
         # Default values
         self._print_started = False
         self._lastE = -1
         self._currentE = -1
         self._last_motion_detected = ""
+        self._fifilament_moving = False
 
     def toJSON(self):
          return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)

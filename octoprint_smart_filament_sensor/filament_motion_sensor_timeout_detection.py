@@ -43,4 +43,5 @@ class FilamentMotionSensorTimeoutDetection(threading.Thread):
     # It is checked if motion is detected and printed to the console.
     def motion(self, pPin):
         self.lastMotion = time.time()
+        self.callback(True)
         self._logger.debug("Motion detected at " + str(self.lastMotion))

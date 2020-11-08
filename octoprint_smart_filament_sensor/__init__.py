@@ -4,7 +4,7 @@ import octoprint.plugin
 from octoprint.events import Events
 import RPi.GPIO as GPIO
 from time import sleep
-from flask import jsonify
+import flask
 import json
 from octoprint_smart_filament_sensor.filament_motion_sensor_timeout_detection import FilamentMotionSensorTimeoutDetection
 from octoprint_smart_filament_sensor.data import SmartFilamentSensorDetectionData
@@ -13,7 +13,8 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                                  octoprint.plugin.EventHandlerPlugin,
                                  octoprint.plugin.TemplatePlugin,
                                  octoprint.plugin.SettingsPlugin,
-                                 octoprint.plugin.AssetPlugin):
+                                 octoprint.plugin.AssetPlugin,
+                                 octoprint.plugin.SimpleApiPlugin):
 
     def initialize(self):
         self._logger.info("Running RPi.GPIO version '{0}'".format(GPIO.VERSION))
@@ -122,9 +123,6 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
         self._setup_sensor()
 
-    #def on_ui_render(self, now, request, render_kwargs):
-        #self.load_smart_filament_sensor_data()
-
     def get_template_configs(self):
         return [dict(type="settings", custom_bindings=False)]
 
@@ -132,6 +130,23 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         return dict(js=["js/smartfilamentsensor_sidebar.js"])
 
 # Sensor methods
+    # Connection tests
+    def stop_connection_test(self):
+        if (self.motion_sensor_thread is not None and self.motion_sensor_thread.name == "ConnectionTest"):
+            self.motion_sensor_thread.keepRunning = False
+            self.motion_sensor_thread = None
+            self._logger.info("Connection test stopped")
+        else:
+            self._logger.info("Connection test is not running")
+
+    def start_connection_test(self):
+        CONNECTION_TEST_TIME = 2
+        if(self.motion_sensor_thread == None):
+            self.motion_sensor_thread = FilamentMotionSensorTimeoutDetection(1, "ConnectionTest", self.motion_sensor_pin, 
+                CONNECTION_TEST_TIME, self._logger, pCallback=self.connectionTestCallback)
+            self.motion_sensor_thread.start()
+            self._logger.info("Connection test started")
+
     # Starts the motion sensor if the sensors are enabled
     def motion_sensor_start(self):
         self._logger.debug("Sensor enabled: " + str(self.motion_sensor_enabled))
@@ -236,6 +251,9 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     def updateToUi(self):
         self._plugin_manager.send_plugin_message(self._identifier, self._data.toJSON())
 
+    def connectionTestCallback(self, pMoving=False):
+        self._data.filament_moving = pMoving
+
 # Events
     def on_event(self, event, payload):     
         if event is Events.PRINT_STARTED:
@@ -281,6 +299,24 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         
         elif event is Events.USER_LOGGED_IN:
             self.updateToUi()
+
+# API commands
+    def get_api_commands(self):
+        return dict(
+            startConnectionTest=[],
+            stopConnectionTest=[]
+        )
+
+    def on_api_command(self, command, data):
+        self._logger.info("API: " + command)
+        if(command == "startConnectionTest"):
+            self.start_connection_test()
+            return flask.make_response("Started connection test", 204)
+        elif(command == "stopConnectionTest"):
+            self.stop_connection_test()
+            return flask.make_response("Stopped connection test", 204)
+        else:
+            return flask.make_response("Not found", 404)
 
 # Plugin update methods
     def get_update_information(self):
