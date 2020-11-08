@@ -27,10 +27,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         self.currentE = -1
         self.START_DISTANCE_OFFSET = 7
         self.send_code = False
-        self.absolut_extrusion = True
-        self._data = SmartFilamentSensorDetectionData(self.motion_sensor_detection_distance, True)
-
-        self._plugin_manager.send_plugin_message(self._identifier, self._data.toJSON())
+        self._data = SmartFilamentSensorDetectionData(self.motion_sensor_detection_distance, True, self.updateToUi)
 
 #Properties
     @property
@@ -95,13 +92,15 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         self.motion_sensor_filament_moving = True
         self.motion_sensor_thread = None
 
+        self.load_smart_filament_sensor_data()
+
+
+    def load_smart_filament_sensor_data(self):
         self._data.remaining_distance = self.motion_sensor_detection_distance
-        self._plugin_manager.send_plugin_message(self._identifier, self._data.toJSON())
 
     def on_after_startup(self):
         self._logger.info("Smart Filament Sensor started")
         self._setup_sensor()
-        self._plugin_manager.send_plugin_message(self._identifier, self._data.toJSON())
 
     def get_settings_defaults(self):
         return dict(
@@ -122,6 +121,9 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     def on_settings_save(self, data):
         octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
         self._setup_sensor()
+
+    #def on_ui_render(self, now, request, render_kwargs):
+        #self.load_smart_filament_sensor_data()
 
     def get_template_configs(self):
         return [dict(type="settings", custom_bindings=False)]
@@ -183,7 +185,6 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         self._logger.debug("Motion sensor detected movement")
         if(self._data.remaining_distance < self.motion_sensor_detection_distance):
             self._data.remaining_distance = self.motion_sensor_detection_distance
-            self._plugin_manager.send_plugin_message(self._identifier, self._data.toJSON())
 
     # Initialize the distance detection values
     def init_distance_detection(self):
@@ -195,13 +196,12 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     # START_DISTANCE_OFFSET is used for the (re-)start sequence
     def reset_remainin_distance(self):
         self._data.remaining_distance = (float(self.motion_sensor_detection_distance) + self.START_DISTANCE_OFFSET)
-        self._plugin_manager.send_plugin_message(self._identifier, self._data.toJSON())
 
     # Calculate the remaining distance
     def calc_distance(self, pE):
         if (self.detection_method == 1):
             # Only with absolute extrusion the delta distance must be calculated
-            if (self.absolut_extrusion):
+            if (self._data.absolut_extrusion):
                 # LastE is not used and set to the same value as currentE
                 if (self.lastE == -1):
                     self.lastE = pE
@@ -216,7 +216,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             if(self._data.remaining_distance > 0):
                 # Calculate the remaining distance from detection distance
                 # currentE - lastE is the delta distance
-                if(self.absolut_extrusion):
+                if(self._data.absolut_extrusion):
                     deltaDistance = self.currentE - self.lastE
                 # With relative extrusion the current extrusion value is the delta distance
                 else:
@@ -229,10 +229,12 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
                 self._logger.debug("Delta Distance: " + str(deltaDistance))
                 self._data.remaining_distance = (self._data.remaining_distance - deltaDistance)
-                self._plugin_manager.send_plugin_message(self._identifier, self._data.toJSON())
 
             else:
                 self.printer_change_filament()
+
+    def updateToUi(self):
+        self._plugin_manager.send_plugin_message(self._identifier, self._data.toJSON())
 
 # Events
     def on_event(self, event, payload):     
@@ -276,6 +278,9 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             self._logger.info("%s: Pausing filament sensors." % (event))
             if self.motion_sensor_enabled and self.detection_method == 0:
                 self.motion_sensor_stop_thread()
+        
+        elif event is Events.USER_LOGGED_IN:
+            self.updateToUi()
 
 # Plugin update methods
     def get_update_information(self):
@@ -301,7 +306,8 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     def distance_detection(self, comm_instance, phase, cmd, cmd_type, gcode, *args, **kwargs):
         # Only performed if distance detection is used
         if(self.detection_method == 1 and self.motion_sensor_enabled):
-            if(gcode == "G0" or gcode == "G1"):
+            # G0 and G1 for linear moves and G2 and G3 for circle movements
+            if(gcode == "G0" or gcode == "G1" or gcode == "G2" or gcode == "G3"):
                 commands = cmd.split(" ")
 
                 for command in commands:
@@ -310,17 +316,20 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                         self.calc_distance(float(extruder))
                         self._logger.debug("E: " + extruder)
 
+            # G92 reset extruder
             elif(gcode == "G92"):
                 if(self.detection_method == 1):
                     self.init_distance_detection()
                 self._logger.debug("G92: Reset Extruders")
 
+            # M82 absolut extrusion mode
             elif(gcode == "M82"):
-                self.absolut_extrusion = True
+                self._data.absolut_extrusion = True
                 self._logger.info("M82: Absolut extrusion")
 
+            # M83 relative extrusion mode
             elif(gcode == "M83"):
-                self.absolut_extrusion = False
+                self._data.absolut_extrusion = False
                 self._logger.info("M83: Relative extrusion")
 
         return cmd

@@ -8,6 +8,7 @@ class SmartFilamentSensorDetectionData(object):
     @remaining_distance.setter
     def remaining_distance(self, value):
         self._remaining_distance = value
+        self.callbackRemainingDistance()
 
     @property
     def print_started(self):
@@ -49,10 +50,11 @@ class SmartFilamentSensorDetectionData(object):
     def last_motion_detected(self, value):
         self._last_motion_detected = value
 
-    def __init__(self, pRemainingDistance, pAbsolutExtrusion):
+    def __init__(self, pRemainingDistance, pAbsolutExtrusion, pCallback=None):
         self._remaining_distance = pRemainingDistance
         self._absolut_extrusion = pAbsolutExtrusion
         self.START_DISTANCE_OFFSET = 7
+        self.callbackRemainingDistance = pCallback
 
         # Default values
         self._print_started = False

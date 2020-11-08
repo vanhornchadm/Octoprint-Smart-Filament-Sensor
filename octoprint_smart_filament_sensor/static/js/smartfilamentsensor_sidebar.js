@@ -5,9 +5,9 @@ $(function(){
         self.settingsViewModel = parameters[0];
         //self.smartfilamentsensorSettings = self.settingsViewModel.settings.plugins.smartfilamentsensor;
 
-        self.isSensorEnabled = ko.observable("Unknown");
-        self.remainingDistance = ko.observable("Unknown");
-        self.lastMotionDetected = ko.observable("Unknown");
+        self.isSensorEnabled = ko.observable(undefined);
+        self.remainingDistance = ko.observable("undefined");
+        self.lastMotionDetected = ko.observable(undefined);
 
         //Returns the value in Yes/No if the Sensor is enabled 
         self.getSensorEnabledString = function(){
