@@ -85,4 +85,4 @@ $(function(){
         dependencies: ["settingsViewModel"],
         elements: ["#sidebar_plugin_smartfilamentsensor"]
     });
-})
+});

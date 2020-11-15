@@ -125,10 +125,10 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         self._setup_sensor()
 
     def get_template_configs(self):
-        return [dict(type="settings", custom_bindings=False)]
+        return [dict(type="settings", custom_bindings=True)]
 
     def get_assets(self):
-        return dict(js=["js/smartfilamentsensor_sidebar.js"])
+        return dict(js=["js/smartfilamentsensor_sidebar.js", "js/smartfilamentsensor_settings.js"])
 
 # Sensor methods
     # Connection tests
