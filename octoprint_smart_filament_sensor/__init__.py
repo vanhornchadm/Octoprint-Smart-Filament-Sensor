@@ -44,6 +44,10 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     def motion_sensor_enabled(self):
         return self._settings.get_boolean(["motion_sensor_enabled"])
 
+    @property
+    def pause_command(self):
+        return self._settings.get(["pause_command"])
+
 #Distance detection
     @property
     def motion_sensor_detection_distance(self):
@@ -53,10 +57,6 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     @property
     def motion_sensor_max_not_moving(self):
         return int(self._settings.get(["motion_sensor_max_not_moving"]))
-
-    #@property
-    #def motion_sensor_gcode(self):
-    #    return str(self._settings.get(["motion_sensor_gcode"])).splitlines()
 
 #General Properties
     @property
@@ -107,6 +107,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
             # Timeout detection
             motion_sensor_max_not_moving=45,  # Maximum time no movement is detected - default continously
+            pause_command="M600",
             #send_gcode_only_once=False,  # Default set to False for backward compatibility
         )
 
@@ -157,13 +158,13 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             self._logger.info("Motion sensor stopped")
 
 # Sensor callbacks
-    # Send M600 command to the printer to interrupt the print
+    # Send configured pause command to the printer to interrupt the print
     def printer_change_filament (self):
         # Check if stop signal was already sent
         if(not self.send_code):
             self._logger.debug("Motion sensor detected no movement")
-            #self._printer.pause_print()        
-            self._printer.commands("M600")
+            self._logger.info("Pause command: " + self.pause_command)   
+            self._printer.commands(self.pause_command)
             self.send_code = True
 
     # Reset the distance, if the remaining distance is smaller than the new value
@@ -218,6 +219,13 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             else:
                 self.printer_change_filament()
 
+    # Remove motion sensor thread if the print is paused
+    def print_paused(self, pEvent=""):
+        self.print_started = False
+        self._logger.info("%s: Pausing filament sensors." % (pEvent=""))
+        if self.motion_sensor_enabled and self.detection_method == 0:
+            self.motion_sensor_stop_thread()
+
 # Events
     def on_event(self, event, payload):     
         if event is Events.PRINT_STARTED:
@@ -256,10 +264,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
         # Disable motion sensor if paused
         elif event is Events.PRINT_PAUSED:
-            self.print_started = False
-            self._logger.info("%s: Pausing filament sensors." % (event))
-            if self.motion_sensor_enabled and self.detection_method == 0:
-                self.motion_sensor_stop_thread()
+            self.print_paused(event)
 
 # Plugin update methods
     def get_update_information(self):
@@ -311,7 +316,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
 
 __plugin_name__ = "Smart Filament Sensor"
-__plugin_version__ = "1.1.2"
+__plugin_version__ = "1.1.3"
 __plugin_pythoncompat__ = ">=2.7,<4"
 
 def __plugin_load__():
