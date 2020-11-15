@@ -20,6 +20,7 @@ This plugin can use the GPIO.BOARD or GPIO.BCM numbering scheme.
 * Detect if filament is not moving anymore (jammed or runout)
     * Detection based on timeout
     * Detection based on filament position sent with G0 or G1 commands (no negative effects on the print quality anymore compared to the previous version)
+    * Alternative pausing commands if M600 is not supported by the printer
 
 ## Installation
 
@@ -42,6 +43,7 @@ Version 1.1.2 of this plugin detects the movement depending on the moved distanc
 
 ### Octoprint - Firmware & Protocol
 Since currently GCode command M600 is used to interrupt the print, it is recommended to add M600 to the setting "Pausing commands".
+Since v1.1.3 there are also alternative pausing commands [M0, M1, M25, M226, M600, M601] available, for those whose printer don't support M600.
 
 ### Octoprint - GCode Scripts
 If you do not want that the print is paused right on your print, I recommend to add a GCode Script for "After print job is paused". Also adding GCode script "Before print job is resumed" might be useful, in the case you hit the heatbed or print head during the change of the filament or removing the blockage.
