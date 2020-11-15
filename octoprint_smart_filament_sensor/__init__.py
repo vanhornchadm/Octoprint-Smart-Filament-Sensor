@@ -222,7 +222,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     # Remove motion sensor thread if the print is paused
     def print_paused(self, pEvent=""):
         self.print_started = False
-        self._logger.info("%s: Pausing filament sensors." % (pEvent=""))
+        self._logger.info("%s: Pausing filament sensors." % (pEvent))
         if self.motion_sensor_enabled and self.detection_method == 0:
             self.motion_sensor_stop_thread()
 
