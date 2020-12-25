@@ -15,8 +15,3 @@
        <label class="control-label">{{ _('Last motion detected:') }} <span data-bind="text: lastMotionDetected"></span></label>
    </div>
 </div>
-<div class="btn-group">
-   <button class="btn btn-small" data-bind="click: function() { startConnectionTest(); }" title="{{ _('Start sensor connection test')|edq }}">Start Test</button>
-   <button class="btn btn-small" data-bind="click: function() { stopConnectionTest(); }" title="{{ _('Stop sensor connection test')|edq }}">Stop Test</button>
-   <!--<button class="btn btn-small" data-bind="click: function() { plugins.addFilter('3rdparty') }, css: {active: _.contains(plugins.currentFilters(), '3rdparty')}" title="{{ _('Show only third-party plugins')|edq }}">{{ _('3rd party') }}</button>-->
-</div>

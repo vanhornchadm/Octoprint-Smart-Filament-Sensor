@@ -32,6 +32,8 @@ After installation a restart of Octoprint is recommended.
 ### GPIO Pin
 * Choose any free GPIO pin you for data usage, but I would recommend to use GPIO pins without special functionalities like e.g. I2C
 * Run the sensor only on 3.3V, because GPIO pins don't like 5V for a long time
+* In [BigTreeTech SmartFilamentSensor Manual](https://github.com/bigtreetech/smart-filament-detection-module/tree/master/manual) on page 12 you can find the functionality of the pins. Please ensure that there is no undocumented twist in your cable
+* My recommended GPIO pins: 11, 13, 15, 17 (such without any special usage). Please check the [documentation](https://www.raspberrypi.org/documentation/usage/gpio/) of your Raspberry Pi version/model. Also other pins could work, if you know how to configure it on the Raspberry, but it might be tricky and not work out of the box.
 
 ### Detection time
 Currently it is necessary to configure a maximum time period no filament movement was detected. This time could be depended on the print speed and maximum print line length. For the beginning - until I figured out how to estimate the best detection time - you can run a test print and messearue your maximum time and configure this value.
