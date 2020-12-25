@@ -33,6 +33,8 @@ After installation a restart of Octoprint is recommended.
 ### GPIO Pin
 * Choose any free GPIO pin you for data usage, but I would recommend to use GPIO pins without special functionalities like e.g. I2C
 * Run the sensor only on 3.3V, because GPIO pins don't like 5V for a long time
+* In [BigTreeTech SmartFilamentSensor Manual](https://github.com/bigtreetech/smart-filament-detection-module/tree/master/manual) on page 12 you can find the functionality of the pins. Please ensure that there is no undocumented twist in your cable
+* My recommended GPIO pins: 11, 13, 15, 17 (such without any special usage). Please check the [documentation](https://www.raspberrypi.org/documentation/usage/gpio/) of your Raspberry Pi version/model. Also other pins could work, if you know how to configure it on the Raspberry, but it might be tricky and not work out of the box.
 
 ### Detection time
 Currently it is necessary to configure a maximum time period no filament movement was detected. This time could be depended on the print speed and maximum print line length. For the beginning - until I figured out how to estimate the best detection time - you can run a test print and messearue your maximum time and configure this value.
@@ -47,6 +49,9 @@ Since v1.1.3 there are also alternative pausing commands [M0, M1, M25, M226, M60
 
 ### Octoprint - GCode Scripts
 If you do not want that the print is paused right on your print, I recommend to add a GCode Script for "After print job is paused". Also adding GCode script "Before print job is resumed" might be useful, in the case you hit the heatbed or print head during the change of the filament or removing the blockage.
+
+### Test script
+Advice: don't run the test script in this repository durin a print. This leads to failures in the detection of movements of the print and therefore to missbehaviour of the plugin.
 
 ## GCode
 ### Start GCode
