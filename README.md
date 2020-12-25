@@ -50,6 +50,9 @@ Since v1.1.3 there are also alternative pausing commands [M0, M1, M25, M226, M60
 ### Octoprint - GCode Scripts
 If you do not want that the print is paused right on your print, I recommend to add a GCode Script for "After print job is paused". Also adding GCode script "Before print job is resumed" might be useful, in the case you hit the heatbed or print head during the change of the filament or removing the blockage.
 
+### Test script
+Advice: don't run the test script in this repository durin a print. This leads to failures in the detection of movements of the print and therefore to missbehaviour of the plugin.
+
 ## GCode
 ### Start GCode
 Since the sensor is activated with the first G0 or G1 command it is adviced to perform these commands after complete heatup of the printer.
