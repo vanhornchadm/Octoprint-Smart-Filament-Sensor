@@ -136,6 +136,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         if (self.motion_sensor_thread is not None and self.motion_sensor_thread.name == "ConnectionTest"):
             self.motion_sensor_thread.keepRunning = False
             self.motion_sensor_thread = None
+            self._data.connection_test_running = False
             self._logger.info("Connection test stopped")
         else:
             self._logger.info("Connection test is not running")
@@ -144,8 +145,9 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         CONNECTION_TEST_TIME = 2
         if(self.motion_sensor_thread == None):
             self.motion_sensor_thread = FilamentMotionSensorTimeoutDetection(1, "ConnectionTest", self.motion_sensor_pin, 
-                CONNECTION_TEST_TIME, self._logger, pCallback=self.connectionTestCallback)
+                CONNECTION_TEST_TIME, self._logger, self._data, pCallback=self.connectionTestCallback)
             self.motion_sensor_thread.start()
+            self._data.connection_test_running = True
             self._logger.info("Connection test started")
 
     # Starts the motion sensor if the sensors are enabled
@@ -173,7 +175,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
                     # Start Timeout_Detection thread
                     self.motion_sensor_thread = FilamentMotionSensorTimeoutDetection(1, "MotionSensorTimeoutDetectionThread", self.motion_sensor_pin, 
-                        self.motion_sensor_max_not_moving, self._logger, pCallback=self.printer_change_filament)
+                        self.motion_sensor_max_not_moving, self._logger, self._data, pCallback=self.printer_change_filament)
                     self.motion_sensor_thread.start()
                     self._logger.info("Motion sensor started: Timeout detection")
 
@@ -265,6 +267,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 # Events
     def on_event(self, event, payload):     
         if event is Events.PRINT_STARTED:
+            self.stop_connection_test()
             self.print_started = True
             if(self.detection_method == 1):
                 self.init_distance_detection()
@@ -377,7 +380,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
 
 __plugin_name__ = "Smart Filament Sensor"
-__plugin_version__ = "1.1.4"
+__plugin_version__ = "1.1.5"
 __plugin_pythoncompat__ = ">=2.7,<4"
 
 def __plugin_load__():

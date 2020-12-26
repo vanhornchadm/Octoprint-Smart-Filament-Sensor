@@ -3,11 +3,13 @@ $(function(){
         var self = this;
 
         self.settingsViewModel = parameters[0];
+        self.printerStateViewModel = parameters[1];
         self.connectionTestDialog = undefined;
 
         self.remainingDistance = ko.observable(undefined);
         self.lastMotionDetected = ko.observable(undefined);
         self.isFilamentMoving = ko.observable(undefined);
+        self.isConnectionTestRunning = ko.observable(false);
 
         self.onStartup = function() {
             self.connectionTestDialog = $("#settings_plugin_smartfilamentsensor_connectiontest");
@@ -15,7 +17,6 @@ $(function(){
         
         self.showConnectionTest = function() {
             self.connectionTestDialog.modal({
-                minHeight: function() { return Math.max($.fn.modal.defaults.maxHeight() - 80, 250); },
                 show: true
             });
         };
@@ -28,15 +29,19 @@ $(function(){
             var message = JSON.parse(data);
             self.remainingDistance(message["_remaining_distance"]);
             self.lastMotionDetected(message["_last_motion_detected"]);
-            self.isFilamentMoving(message["_filament_moving"]);
+            self.isConnectionTestRunning(message["_connection_test_running"]);
 
-            /*if(message["_filament_moving"] == true){
-                self.isFilamentMoving("Yes");
+            if(message["_filament_moving"] == true){
+                self.isFilamentMoving("Movement detected");
             }
             else{
-                self.isFilamentMoving("No");
-            }*/
+                self.isFilamentMoving("Filament is not moving");
+            }
         };
+
+        self.enableConnectionTest = ko.pureComputed(function() {
+            return !self.printerStateViewModel.isBusy();
+        });
 
         self.startConnectionTest = function(){
             $.ajax({
@@ -68,7 +73,7 @@ $(function(){
     OCTOPRINT_VIEWMODELS.push({
         construct: SmartFilamentSensorSettingsViewModel,
         name: "smartFilamentSensorSettingsViewModel",
-        dependencies: ["settingsViewModel"],
+        dependencies: ["settingsViewModel", "printerStateViewModel"],
         elements: ["#settings_plugin_smartfilamentsensor"]
     });
 });

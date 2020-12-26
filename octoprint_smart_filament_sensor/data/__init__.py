@@ -49,6 +49,7 @@ class SmartFilamentSensorDetectionData(object):
     @last_motion_detected.setter
     def last_motion_detected(self, value):
         self._last_motion_detected = value
+        self.callbackUpdateUI()
 
     @property
     def filament_moving(self):
@@ -57,6 +58,15 @@ class SmartFilamentSensorDetectionData(object):
     @filament_moving.setter
     def filament_moving(self, value):
         self._filament_moving = value
+        self.callbackUpdateUI()
+
+    @property
+    def connection_test_running(self):
+        return self._connection_test_running
+
+    @connection_test_running.setter
+    def connection_test_running(self, value):
+        self._connection_test_running = value
         self.callbackUpdateUI()
 
     def __init__(self, pRemainingDistance, pAbsolutExtrusion, pCallback=None):
@@ -70,7 +80,7 @@ class SmartFilamentSensorDetectionData(object):
         self._lastE = -1
         self._currentE = -1
         self._last_motion_detected = ""
-        self._fifilament_moving = False
+        self._filament_moving = False
 
     def toJSON(self):
          return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)

@@ -82,11 +82,12 @@
         <!-- Connection test -->
         <h6>{{_('Connection Test') }}</h6>
         <div class="control-group">
-            <button class="btn btn-primary span4" data-bind="click: function() { showConnectionTest(); }" title="{{ _('Start sensor connection test')|edq }}">Start Test</button>
+            <button class="btn btn-primary span4" data-bind="enable: enableConnectionTest, click: function() { showConnectionTest(); }" title="{{ _('Start sensor connection test')|edq }}">Start Test</button>
         </div>
     </form>
 </div>
 
+<!-- Connection test -->
 <div id="settings_plugin_smartfilamentsensor_connectiontest" class="modal hide fade">
     <div class="modal-header">
         <h3>{{_('Connection Test') }}</h3>
@@ -94,24 +95,18 @@
     <div class="modal-body">
         <!-- <pre id="settings_plugin_pluginmanager_workingdialog_output" class="pre-scrollable pre-output" style="height: 170px" data-bind="foreach: loglines"><span data-bind="text: line, css: {stdout: stream == 'stdout', stderr: stream == 'stderr', call: stream == 'call', message: stream == 'message', error: stream == 'error'}"></span></pre> -->
         <div class="control-group">
+            <div class="alert alert-primary">Press start and then move the filament manually.</div>
             <div class="controls form-inline">
                 <label class="control-label">{{ _('Filament is moving:') }} <span data-bind="text: isFilamentMoving"></span></label>
             </div>
-            <div class="controls form-inline">
-                <label class="control-label">{{ _('Remaining distance:') }} <span data-bind="text: remainingDistance"></span></label>
-            </div>
-            <div class="controls form-inline">
-                <label class="control-label">{{ _('Last motion detected:') }} <span data-bind="text: lastMotionDetected"></span></label>
-            </div>
         </div>
         <div class="btn-group">
-            <button class="btn btn-primary" data-bind="click: function() { startConnectionTest(); }" title="{{ _('Start sensor connection test')|edq }}">Start Test</button>
-            <button class="btn btn-primary" data-bind="click: function() { stopConnectionTest(); }" title="{{ _('Stop sensor connection test')|edq }}">Stop Test</button>
-            <!--<button class="btn btn-small" data-bind="click: function() { plugins.addFilter('3rdparty') }, css: {active: _.contains(plugins.currentFilters(), '3rdparty')}" title="{{ _('Show only third-party plugins')|edq }}">{{ _('3rd party') }}</button>-->
+            <button class="btn btn-primary" data-bind="enable: !isConnectionTestRunning(), click: function() { startConnectionTest(); }" title="{{ _('Start sensor connection test')|edq }}">Start Test</button>
+            <button class="btn btn-primary" data-bind="enable: isConnectionTestRunning(), click: function() { stopConnectionTest(); }" title="{{ _('Stop sensor connection test')|edq }}">Stop Test</button>
         </div>
     </div>
     <div class="modal-footer">
         <!--<button class="btn" data-dismiss="modal" data-bind="enable: !$root.working()" aria-hidden="true">{{ _('Close') }}</button>-->
-        <button class="btn" data-dismiss="modal" aria-hidden="true">{{ _('Close') }}</button>
+        <button class="btn" data-dismiss="modal" data-bind="click: function() { stopConnectionTest(); }" aria-hidden="true">{{ _('Close') }}</button>
     </div>
 </div>
