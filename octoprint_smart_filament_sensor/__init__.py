@@ -328,7 +328,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             return flask.make_response("Not found", 404)
 
 # Plugin update methods
-    def get_update_information(self):
+    def update_hook(self):
         return dict(
             smartfilamentsensor=dict(
                 displayName="Smart Filament Sensor",
@@ -340,8 +340,24 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                 repo="Octoprint-Smart-Filament-Sensor",
                 current=self._plugin_version,
 
+                # stable releases
+                stable_branch=dict(
+					name="Stable",
+					branch="master",
+					comittish=["master"]
+				),
+
+				# release candidates
+				prerelease_branches=[
+					dict(
+						name="Release Candidate",
+						branch="PreRelease",
+						comittish=["PreRelease"],
+					)
+				],
+
                 # update method: pip
-                pip="https://github.com/maocypher/Octoprint-Smart-Filament-Sensor/archive/master.zip"
+                pip="https://github.com/maocypher/Octoprint-Smart-Filament-Sensor/archive/{target_version}.zip"
             )
         )
 
@@ -391,7 +407,7 @@ def __plugin_load__():
 
     global __plugin_hooks__
     __plugin_hooks__ = {
-        "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information,
+        "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.update_hook,
         "octoprint.comm.protocol.gcode.sent": __plugin_implementation__.distance_detection
     }
 
