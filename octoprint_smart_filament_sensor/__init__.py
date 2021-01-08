@@ -202,8 +202,8 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     def reset_distance (self, pPin):
         self._logger.debug("Motion sensor detected movement")
         self.send_code = False
-        if(self.remaining_distance < self.motion_sensor_detection_distance):
-            self.remaining_distance = self.motion_sensor_detection_distance
+        if(self._data.remaining_distance < self.motion_sensor_detection_distance):
+            self._data.remaining_distance = self.motion_sensor_detection_distance
 
     # Initialize the distance detection values
     def init_distance_detection(self):
@@ -397,7 +397,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
 
 __plugin_name__ = "Smart Filament Sensor"
-__plugin_version__ = "1.1.5"
+__plugin_version__ = "1.1.5.1"
 
 __plugin_pythoncompat__ = ">=2.7,<4"
 
