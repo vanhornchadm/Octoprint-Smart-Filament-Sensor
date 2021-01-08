@@ -40,6 +40,7 @@ After installation a restart of Octoprint is recommended.
 There are two different modes for GPIO pins:
 * BCM (Broadcom SOC channel) - the numbers after the GPIO label
 * Board - the number of the pin on the board
+
 E.g.
 * Board Pin **11**
 * BCM GPIO **17**
