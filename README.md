@@ -36,6 +36,14 @@ After installation a restart of Octoprint is recommended.
 * In [BigTreeTech SmartFilamentSensor Manual](https://github.com/bigtreetech/smart-filament-detection-module/tree/master/manual) on page 12 you can find the functionality of the pins. Please ensure that there is no undocumented twist in your cable
 * My recommended GPIO pins: 11, 13, 15, 17 (such without any special usage). Please check the [documentation](https://www.raspberrypi.org/documentation/usage/gpio/) of your Raspberry Pi version/model. Also other pins could work, if you know how to configure it on the Raspberry, but it might be tricky and not work out of the box.
 
+**Attention**
+There are two different modes for GPIO pins:
+* BCM (Broadcom SOC channel) - the numbers after the GPIO label
+* Board - the number of the pin on the board
+E.g.
+* Board Pin **11**
+* BCM GPIO **17**
+
 ### Detection time
 Currently it is necessary to configure a maximum time period no filament movement was detected. This time could be depended on the print speed and maximum print line length. For the beginning - until I figured out how to estimate the best detection time - you can run a test print and messearue your maximum time and configure this value.
 The default value 45 seconds was estimated on max. print speed 10mm/s, for faster prints it could be smaller.
