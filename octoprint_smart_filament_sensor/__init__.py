@@ -23,7 +23,6 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         GPIO.setwarnings(False)        # Disable GPIO warnings
 
         self.print_started = False
-        #self.remaining_distance = self.motion_sensor_detection_distance
         self.lastE = -1
         self.currentE = -1
         self.START_DISTANCE_OFFSET = 7
@@ -72,6 +71,9 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
 # Initialization methods
     def _setup_sensor(self):
+        # Clean up before intializing again, because ports could already be in use
+        GPIO.cleanup()
+
         if(self.mode == 0):
             self._logger.info("Using Board Mode")
             GPIO.setmode(GPIO.BOARD)
@@ -84,7 +86,11 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         # Add reset_distance if detection_method is distance_detection
         if (self.detection_method == 1):
             # Remove event first, because it might been in use already
-            GPIO.remove_event_detect(self.motion_sensor_pin)
+            try:
+                GPIO.remove_event_detect(self.motion_sensor_pin)
+            except:
+                self._logger.warn("Pin " + str(self.motion_sensor_pin) + " not used before")
+
             GPIO.add_event_detect(self.motion_sensor_pin, GPIO.BOTH, callback=self.reset_distance)
 
         if self.motion_sensor_enabled == False:
@@ -397,8 +403,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
 
 __plugin_name__ = "Smart Filament Sensor"
-__plugin_version__ = "1.1.5.1"
-
+__plugin_version__ = "1.1.5.2"
 __plugin_pythoncompat__ = ">=2.7,<4"
 
 def __plugin_load__():

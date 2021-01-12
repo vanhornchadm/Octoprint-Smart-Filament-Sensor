@@ -22,7 +22,11 @@ class FilamentMotionSensorTimeoutDetection(threading.Thread):
         self.keepRunning = True
 
         # Remove event, if already an event was set
-        GPIO.remove_event_detect(self.used_pin)
+        try:
+            GPIO.remove_event_detect(self.used_pin)
+        except:
+            self._logger.warn("Pin " + str(pUsedPin) + " not used before")
+            
         GPIO.add_event_detect(self.used_pin, GPIO.BOTH, callback=self.motion)
 
     # Override run method of threading
