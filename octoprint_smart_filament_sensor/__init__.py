@@ -22,10 +22,10 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             raise Exception("RPi.GPIO must be greater than 0.6")
         GPIO.setwarnings(False)        # Disable GPIO warnings
 
-        self.print_started = False
-        self.lastE = -1
-        self.currentE = -1
-        self.START_DISTANCE_OFFSET = 7
+        #self._data.print_started = False
+        #self._data.lastE = -1
+        #self._data.currentE = -1
+        #self._data.START_DISTANCE_OFFSET = 7
         self.send_code = False
         self._data = SmartFilamentSensorDetectionData(self.motion_sensor_detection_distance, True, self.updateToUi)
 
@@ -216,14 +216,14 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
     # Initialize the distance detection values
     def init_distance_detection(self):
-        self.lastE = float(-1)
-        self.currentE = float(0)
+        self._data.lastE = float(-1)
+        self._data.currentE = float(0)
         self.reset_remainin_distance()
 
     # Reset the remaining distance on start or resume
     # START_DISTANCE_OFFSET is used for the (re-)start sequence
     def reset_remainin_distance(self):
-        self._data.remaining_distance = (float(self.motion_sensor_detection_distance) + self.START_DISTANCE_OFFSET)
+        self._data.remaining_distance = (float(self.motion_sensor_detection_distance) + self._data.START_DISTANCE_OFFSET)
 
     # Calculate the remaining distance
     def calc_distance(self, pE):
@@ -231,13 +231,13 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             # Only with absolute extrusion the delta distance must be calculated
             if (self._data.absolut_extrusion):
                 # LastE is not used and set to the same value as currentE
-                if (self.lastE == -1):
-                    self.lastE = pE
+                if (self._data.lastE == -1):
+                    self._data.lastE = pE
                 else:
-                    self.lastE = self.currentE
-                self.currentE = pE
+                    self._data.lastE = self._data.currentE
+                self._data.currentE = pE
 
-                self._logger.debug("LastE: " + str(self.lastE) + "; CurrentE: " + str(self.currentE))
+                self._logger.debug("LastE: " + str(self._data.lastE) + "; CurrentE: " + str(self._data.currentE))
 
             self._logger.debug("Remaining Distance: " + str(self._data.remaining_distance))
 
@@ -245,7 +245,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                 # Calculate the remaining distance from detection distance
                 # currentE - lastE is the delta distance
                 if(self._data.absolut_extrusion):
-                    deltaDistance = self.currentE - self.lastE
+                    deltaDistance = self._data.currentE - self._data.lastE
                 # With relative extrusion the current extrusion value is the delta distance
                 else:
                     deltaDistance = float(pE)
@@ -269,7 +269,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
     # Remove motion sensor thread if the print is paused
     def print_paused(self, pEvent=""):
-        self.print_started = False
+        self._data.print_started = False
         self._logger.info("%s: Pausing filament sensors." % (pEvent))
         if self.motion_sensor_enabled and self.detection_method == 0:
             self.motion_sensor_stop_thread()
@@ -278,12 +278,12 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     def on_event(self, event, payload):     
         if event is Events.PRINT_STARTED:
             self.stop_connection_test()
-            self.print_started = True
+            self._data.print_started = True
             if(self.detection_method == 1):
                 self.init_distance_detection()
 
         elif event is Events.PRINT_RESUMED:
-            self.print_started = True
+            self._data.print_started = True
 
             # If distance detection is used reset the remaining distance, because otherwise the print is not resuming anymore
             if(self.detection_method == 1):
@@ -293,11 +293,11 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
         # Start motion sensor on first G1 command
         elif event is Events.Z_CHANGE:
-            if(self.print_started):
+            if(self._data.print_started):
                 self.motion_sensor_start()
 
                 # Set print_started to False to prevent that the starting command is called multiple times
-                self.print_started = False         
+                self._data.print_started = False         
 
         # Disable sensor
         elif event in (
@@ -307,7 +307,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             Events.ERROR
         ):
             self._logger.info("%s: Disabling filament sensors." % (event))
-            self.print_started = False
+            self._data.print_started = False
             if self.motion_sensor_enabled and self.detection_method == 0:
                 self.motion_sensor_stop_thread()
 
@@ -406,7 +406,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
 
 __plugin_name__ = "Smart Filament Sensor"
-__plugin_version__ = "1.1.5.3"
+__plugin_version__ = "1.2.0"
 __plugin_pythoncompat__ = ">=2.7,<4"
 
 def __plugin_load__():
