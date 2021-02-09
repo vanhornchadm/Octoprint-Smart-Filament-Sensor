@@ -10,9 +10,14 @@ $(function(){
         self.lastMotionDetected = ko.observable(undefined);
         self.isFilamentMoving = ko.observable(undefined);
         self.isConnectionTestRunning = ko.observable(false);
+        self.gpioPinConnectionTest = ko.observable(undefined);
 
         self.onStartup = function() {
             self.connectionTestDialog = $("#settings_plugin_smartfilamentsensor_connectiontest");
+
+            /*if(self.settingsViewModel.extruders.length == 0){
+                self.addExtruder();
+            }*/
         };
         
         self.showConnectionTest = function() {
@@ -27,15 +32,16 @@ $(function(){
             }
             
             var message = JSON.parse(data);
-            self.remainingDistance(message["_remaining_distance"]);
-            self.lastMotionDetected(message["_last_motion_detected"]);
-            self.isConnectionTestRunning(message["_connection_test_running"]);
+            self.remainingDistance(message["remaining_distance"]);
+            self.lastMotionDetected(message["last_motion_detected"]);
+            self.isConnectionTestRunning(message["connection_test_running"]);
+            self.gpioPinConnectionTest(message["gpio_pin_connection_test"]);
 
-            if(message["_filament_moving"] == true){
-                self.isFilamentMoving("Movement detected");
+            if(message["filament_moving"] == true){
+                self.isFilamentMoving("Yes, filament is moving");
             }
             else{
-                self.isFilamentMoving("Filament is not moving");
+                self.isFilamentMoving("No, filament is not moving");
             }
         };
 
@@ -68,6 +74,14 @@ $(function(){
         self.RestSuccess = function(response){
             return;
         }
+
+        self.addExtruder = function(){
+			self.settingsViewModel.settings.plugins.smartfilamentsensor.extruders.push({'pin':ko.observable(-1),'isEnabled':ko.observable(false)});
+		}
+
+        self.removeExtruder = function(data){
+			self.settingsViewModel.settings.plugins.smartfilamentsensor.extruders.remove(data);			
+		}
     }
 
     OCTOPRINT_VIEWMODELS.push({

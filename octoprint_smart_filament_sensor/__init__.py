@@ -5,9 +5,17 @@ from octoprint.events import Events
 import RPi.GPIO as GPIO
 from time import sleep
 import flask
-import json
 from octoprint_smart_filament_sensor.filament_motion_sensor_timeout_detection import FilamentMotionSensorTimeoutDetection
-from octoprint_smart_filament_sensor.data import SmartFilamentSensorDetectionData
+from octoprint_smart_filament_sensor.data.SmartFilamentSensorDetectionData import SmartFilamentSensorDetectionData
+from enum import Enum
+
+class DetectionMethod(Enum):
+    TIMEOUT_DETECTION = 0
+    DISTANCE_DETECTION = 1
+
+class GpioModes(Enum):
+    BOARD_MODE = 0
+    BCM_MODE = 1
 
 class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                                  octoprint.plugin.EventHandlerPlugin,
@@ -17,22 +25,27 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                                  octoprint.plugin.SimpleApiPlugin):
 
     def initialize(self):
+        self._logger.debug("Start method: initialize")
         self._logger.info("Running RPi.GPIO version '{0}'".format(GPIO.VERSION))
         if GPIO.VERSION < "0.6":       # Need at least 0.6 for edge detection
             raise Exception("RPi.GPIO must be greater than 0.6")
         GPIO.setwarnings(False)        # Disable GPIO warnings
 
-        #self._data.print_started = False
-        #self._data.lastE = -1
-        #self._data.currentE = -1
-        #self._data.START_DISTANCE_OFFSET = 7
+        # Constants      
         self.send_code = False
-        self._data = SmartFilamentSensorDetectionData(self.motion_sensor_detection_distance, True, self.updateToUi)
+        self._data = SmartFilamentSensorDetectionData(self._logger, self.motion_sensor_detection_distance, True, self.updateToUi)
+    
+        if(len(self.extruders) == 0):
+            self.extruders = self.addExtruder(-1)
+        else:
+            self._data.loadExtruders(self.extruders)
+
+        self._logger.debug("End method: initialize")
 
 #Properties
-    @property
-    def motion_sensor_pin(self):
-        return int(self._settings.get(["motion_sensor_pin"]))
+    #@property
+    #def motion_sensor_pin(self):
+    #    return int(self._settings.get(["motion_sensor_pin"]))
 
     @property
     def motion_sensor_pause_print(self):
@@ -42,13 +55,21 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     def detection_method(self):
         return int(self._settings.get(["detection_method"]))
 
-    @property
-    def motion_sensor_enabled(self):
-        return self._settings.get_boolean(["motion_sensor_enabled"])
+    #@property
+    #def motion_sensor_enabled(self):
+    #    return self._settings.get_boolean(["motion_sensor_enabled"])
 
     @property
     def pause_command(self):
         return self._settings.get(["pause_command"])
+
+    @property
+    def extruders(self):
+        return self._settings.get(["extruders"])
+
+    @extruders.setter
+    def extruders(self, value):
+        self._settings.set(["extruders"], value)
 
 #Distance detection
     @property
@@ -65,42 +86,63 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     def mode(self):
         return int(self._settings.get(["mode"]))
 
-    #@property
-    #def send_gcode_only_once(self):
-    #    return self._settings.get_boolean(["send_gcode_only_once"])
-
 # Initialization methods
     def _setup_sensor(self):
+        self._logger.debug("Start method: _setup_sensor")
         # Clean up before intializing again, because ports could already be in use
-        GPIO.cleanup()
+        #GPIO.cleanup()
 
-        if(self.mode == 0):
+        if(self.mode == GpioModes.BOARD_MODE.value):
             self._logger.info("Using Board Mode")
             GPIO.setmode(GPIO.BOARD)
         else:
             self._logger.info("Using BCM Mode")
             GPIO.setmode(GPIO.BCM)
 
-        GPIO.setup(self.motion_sensor_pin, GPIO.IN)
-
-        # Add reset_distance if detection_method is distance_detection
-        if (self.detection_method == 1):
-            # Remove event first, because it might been in use already
-            try:
-                GPIO.remove_event_detect(self.motion_sensor_pin)
-            except:
-                self._logger.warn("Pin " + str(self.motion_sensor_pin) + " not used before")
-
-            GPIO.add_event_detect(self.motion_sensor_pin, GPIO.BOTH, callback=self.reset_distance)
-
-        if self.motion_sensor_enabled == False:
-            self._logger.info("Motion sensor is deactivated")
-
+        #GPIO.setup(self.motion_sensor_pin, GPIO.IN)
+        self.init_gpio_pins()
+        self.init_sensor_event_callback()
+        self.is_one_sensor_enabled(logging=True)
+        
         self._data.filament_moving = False
         self.motion_sensor_thread = None
 
         self.load_smart_filament_sensor_data()
 
+        self._logger.debug("End method: _setup_sensor")
+
+    def init_gpio_pins(self):
+        self._logger.debug("Start method: init_gpio_pins")
+        for extr in self._data.extruders:
+            pin = extr.pin
+            GPIO.setup(pin, GPIO.IN)
+            self._logger.info("Setup input pin: %r" % (pin))
+
+        self._logger.debug("End method: init_gpio_pins")
+
+    def init_sensor_event_callback(self):
+        # Add reset_distance if detection_method is distance_detection
+        if (self.detection_method == DetectionMethod.DISTANCE_DETECTION):
+            # Remove event first, because it might been in use already
+            for extr in self._data.extruders:
+                pin = extr.pin
+                try:
+                    GPIO.remove_event_detect(pin)
+                except:
+                    self._logger.warn("Pin " + str(pin) + " not used before")
+
+                GPIO.add_event_detect(pin, GPIO.BOTH, callback=self.reset_distance)
+
+    def is_one_sensor_enabled(self, logging=False):
+        enabled = False
+        for extr in self._data.extruders:
+            if extr.is_enabled == True:
+                enabled = True
+            elif logging == True and extr.is_enabled == False:
+                self._logger.info("Motion sensor pin %r is deactivated" % (extr.is_enabled))
+                
+
+        return enabled
 
     def load_smart_filament_sensor_data(self):
         self._data.remaining_distance = self.motion_sensor_detection_distance
@@ -112,10 +154,10 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     def get_settings_defaults(self):
         return dict(
             #Motion sensor
-            mode=0,    # Board Mode
-            motion_sensor_enabled = True, #Sensor detection is enabled by default
-            motion_sensor_pin=-1,  # Default is no pin
-            detection_method = 0, # 0 = timeout detection, 1 = distance detection
+            mode=0, #GpioModes.BOARD_MODE
+            #motion_sensor_enabled = True, #Sensor detection is enabled by default
+            #motion_sensor_pin=-1,  # Default is no pin
+            detection_method = 0, #DetectionMethod.TIMEOUT_DETECTION
 
             # Distance detection
             motion_sensor_detection_distance = 15, # Recommended detection distance from Marlin would be 7
@@ -123,7 +165,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             # Timeout detection
             motion_sensor_max_not_moving=45,  # Maximum time no movement is detected - default continously
             pause_command="M600",
-            #send_gcode_only_once=False,  # Default set to False for backward compatibility
+            extruders=[]
         )
 
     def on_settings_save(self, data):
@@ -137,51 +179,34 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         return dict(js=["js/smartfilamentsensor_sidebar.js", "js/smartfilamentsensor_settings.js"])
 
 # Sensor methods
-    # Connection tests
-    def stop_connection_test(self):
-        if (self.motion_sensor_thread is not None and self.motion_sensor_thread.name == "ConnectionTest"):
-            self.motion_sensor_thread.keepRunning = False
-            self.motion_sensor_thread = None
-            self._data.connection_test_running = False
-            self._logger.info("Connection test stopped")
-        else:
-            self._logger.info("Connection test is not running")
-
-    def start_connection_test(self):
-        CONNECTION_TEST_TIME = 2
-        if(self.motion_sensor_thread == None):
-            self.motion_sensor_thread = FilamentMotionSensorTimeoutDetection(1, "ConnectionTest", self.motion_sensor_pin, 
-                CONNECTION_TEST_TIME, self._logger, self._data, pCallback=self.connectionTestCallback)
-            self.motion_sensor_thread.start()
-            self._data.connection_test_running = True
-            self._logger.info("Connection test started")
-
     # Starts the motion sensor if the sensors are enabled
     def motion_sensor_start(self):
-        self._logger.debug("Sensor enabled: " + str(self.motion_sensor_enabled))
+        #self._logger.debug("Sensor enabled: " + str(self.motion_sensor_enabled))
         
-        if self.motion_sensor_enabled:
-            if (self.mode == 0):
+        if self.is_one_sensor_enabled():
+            if (self.mode == GpioModes.BOARD_MODE):
                 self._logger.debug("GPIO mode: Board Mode")
             else:
                 self._logger.debug("GPIO mode: BCM Mode")
-            self._logger.debug("GPIO pin: " + str(self.motion_sensor_pin))
+            #TODO hard coded pin
+            self._logger.debug("GPIO pin: " + str(self._data.extruders[0].pin))
 
             # Distance detection            
-            if (self.detection_method == 1):
+            if (self.detection_method == DetectionMethod.DISTANCE_DETECTION):
                 self._logger.info("Motion sensor started: Distance detection")
                 self._logger.debug("Detection Mode: Distance detection")
                 self._logger.debug("Distance: " + str(self.motion_sensor_detection_distance))
 
             # Timeout detection
-            elif (self.detection_method == 0):
+            elif (self.detection_method == DetectionMethod.TIMEOUT_DETECTION):
                 if self.motion_sensor_thread == None:
                     self._logger.debug("Detection Mode: Timeout detection")
                     self._logger.debug("Timeout: " + str(self.motion_sensor_max_not_moving))
 
                     # Start Timeout_Detection thread
-                    self.motion_sensor_thread = FilamentMotionSensorTimeoutDetection(1, "MotionSensorTimeoutDetectionThread", self.motion_sensor_pin, 
-                        self.motion_sensor_max_not_moving, self._logger, self._data, pCallback=self.printer_change_filament)
+                    #TODO hard coded pin
+                    self.motion_sensor_thread = FilamentMotionSensorTimeoutDetection(1, "MotionSensorTimeoutDetectionThread", self._data.extruders[0].pin, 
+                        self.motion_sensor_max_not_moving, self._logger, pCallback=self.printer_change_filament)
                     self.motion_sensor_thread.start()
                     self._logger.info("Motion sensor started: Timeout detection")
 
@@ -197,14 +222,17 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
 # Sensor callbacks
     # Send configured pause command to the printer to interrupt the print
-    def printer_change_filament (self):
-        # Check if stop signal was already sent
-        if(not self.send_code):
-            self._logger.debug("Motion sensor detected no movement")
-            self._logger.info("Pause command: " + self.pause_command)   
-            self._printer.commands(self.pause_command)
-            self.send_code = True
-            self._data.filament_moving = False
+    def printer_change_filament (self, pMoving, pLastMotionDetected):
+        self._data.filament_moving = pMoving
+        self._data.last_motion_detected = pLastMotionDetected
+
+        if(pMoving == False):
+            # Check if stop signal was already sent
+            if(not self.send_code):
+                self._logger.debug("Motion sensor detected no movement")
+                self._logger.info("Pause command: " + self.pause_command)   
+                self._printer.commands(self.pause_command)
+                self.send_code = True
 
     # Reset the distance, if the remaining distance is smaller than the new value
     def reset_distance (self, pPin):
@@ -227,7 +255,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
     # Calculate the remaining distance
     def calc_distance(self, pE):
-        if (self.detection_method == 1):
+        if (self.detection_method == DetectionMethod.DISTANCE_DETECTION):
             # Only with absolute extrusion the delta distance must be calculated
             if (self._data.absolut_extrusion):
                 # LastE is not used and set to the same value as currentE
@@ -264,14 +292,11 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     def updateToUi(self):
         self._plugin_manager.send_plugin_message(self._identifier, self._data.toJSON())
 
-    def connectionTestCallback(self, pMoving=False):
-        self._data.filament_moving = pMoving
-
     # Remove motion sensor thread if the print is paused
     def print_paused(self, pEvent=""):
         self._data.print_started = False
         self._logger.info("%s: Pausing filament sensors." % (pEvent))
-        if self.motion_sensor_enabled and self.detection_method == 0:
+        if self.is_one_sensor_enabled() and self.detection_method == DetectionMethod.TIMEOUT_DETECTION:
             self.motion_sensor_stop_thread()
 
 # Events
@@ -279,14 +304,14 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         if event is Events.PRINT_STARTED:
             self.stop_connection_test()
             self._data.print_started = True
-            if(self.detection_method == 1):
+            if(self.detection_method == DetectionMethod.DISTANCE_DETECTION):
                 self.init_distance_detection()
 
         elif event is Events.PRINT_RESUMED:
             self._data.print_started = True
 
             # If distance detection is used reset the remaining distance, because otherwise the print is not resuming anymore
-            if(self.detection_method == 1):
+            if(self.detection_method == DetectionMethod.DISTANCE_DETECTION):
                 self.reset_remainin_distance()
 
             self.motion_sensor_start()
@@ -308,7 +333,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         ):
             self._logger.info("%s: Disabling filament sensors." % (event))
             self._data.print_started = False
-            if self.motion_sensor_enabled and self.detection_method == 0:
+            if self.is_one_sensor_enabled() and self.detection_method == DetectionMethod.TIMEOUT_DETECTION:
                 self.motion_sensor_stop_thread()
 
         # Disable motion sensor if paused
@@ -317,6 +342,9 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         
         elif event is Events.USER_LOGGED_IN:
             self.updateToUi()
+
+        elif event is Events.SETTINGS_UPDATED:
+            self._data.loadExtruders(self.extruders)
 
 # API commands
     def get_api_commands(self):
@@ -328,10 +356,10 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     def on_api_command(self, command, data):
         self._logger.info("API: " + command)
         if(command == "startConnectionTest"):
-            self.start_connection_test()
+            self._data.startConnectionTest()
             return flask.make_response("Started connection test", 204)
         elif(command == "stopConnectionTest"):
-            self.stop_connection_test()
+            self._data.stopConnectionTest()
             return flask.make_response("Stopped connection test", 204)
         else:
             return flask.make_response("Not found", 404)
@@ -375,7 +403,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     # G0 or G1: Caluclate the remaining distance
     def distance_detection(self, comm_instance, phase, cmd, cmd_type, gcode, *args, **kwargs):
         # Only performed if distance detection is used
-        if(self.detection_method == 1 and self.motion_sensor_enabled):
+        if(self.detection_method == DetectionMethod.DISTANCE_DETECTION and self.is_one_sensor_enabled()):
             # G0 and G1 for linear moves and G2 and G3 for circle movements
             if(gcode == "G0" or gcode == "G1" or gcode == "G2" or gcode == "G3"):
                 commands = cmd.split(" ")
@@ -388,7 +416,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
             # G92 reset extruder
             elif(gcode == "G92"):
-                if(self.detection_method == 1):
+                if(self.detection_method == DetectionMethod.DISTANCE_DETECTION):
                     self.init_distance_detection()
                 self._logger.debug("G92: Reset Extruders")
 

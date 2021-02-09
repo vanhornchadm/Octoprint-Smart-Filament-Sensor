@@ -1,3 +1,5 @@
+import json
+
 # For multi extruder every extruder could have the same data
 # - A filament sensor
 # - Distance measurements
@@ -5,22 +7,22 @@
 class SmartFilamentSensorExtruderData(object):
     # The GPIO pin of the sensor
     @property
-    def motion_sensor_pin(self):
-        return self._motion_sensor_pin
+    def pin(self):
+        return self._pin
 
-    @motion_sensor_pin.setter
-    def motion_sensor_pin(self, value):
-        self._motion_sensor_pin = value
+    @pin.setter
+    def pin(self, value):
+        self._pin = value
         self.callbackUpdateUI()
 
     # Enables or disables the sensor
     @property
-    def motion_sensor_enabled(self):
-        return self._motion_sensor_enabled
+    def is_enabled(self):
+        return self._is_enabled
 
-    @motion_sensor_enabled.setter
-    def motion_sensor_enabled(self, value):
-        self._motion_sensor_enabled = value
+    @is_enabled.setter
+    def is_enabled(self, value):
+        self._is_enabled = value
         self.callbackUpdateUI()
 
     # The last status of the filament
@@ -77,12 +79,92 @@ class SmartFilamentSensorExtruderData(object):
     # pPin = the GPIO pin for data
     # pSensorEnabled = enables or disables the sensor
     # pRemainingDistance = the start value for the remaining distance in distance detection mode
-    def __init__(self, pPin, pSensorEnabled, pRemainingDistance):
-        self._motion_sensor_pin = pPin
-        self._motion_sensor_enabled = pSensorEnabled
-        self._remaining_distance = pRemainingDistance
+    def __init__(self, pPin, pSensorEnabled):
+        self._pin = int(pPin)
+        self._is_enabled = pSensorEnabled
+        self.DETECTION_DISTANCE = -1
+        self._absolut_extrusion = False
+        self.callbackFilamentStopped = None
+        self.START_DISTANCE_OFFSET = -1
+        self._remaining_distance = -1
         
         self._filament_moving = False
         self._lastE = -1
         self._currentE = -1
         self._last_motion_detected = ""
+
+    def setup(self, pPin, pSensorEnabled, pRemainingDistance, pAbsolutExtrusion, pCallbackStoppedMoving=None):
+        self._pin = pPin
+        self._is_enabled = pSensorEnabled
+        self.DETECTION_DISTANCE = pRemainingDistance
+        self._absolut_extrusion = pAbsolutExtrusion
+        self.callbackFilamentStopped = pCallbackStoppedMoving
+        self.START_DISTANCE_OFFSET = 7
+        self._remaining_distance = self.DETECTION_DISTANCE + self.START_DISTANCE_OFFSET
+        
+        self._filament_moving = False
+        self._lastE = -1
+        self._currentE = -1
+        self._last_motion_detected = ""
+
+    def filament_moved(self, pCurrentE=None):
+        if(pCurrentE is not None):
+            if (self._absolut_extrusion):
+                # LastE is not used and set to the same value as currentE
+                if (self._lastE == -1):
+                    self._lastE = pCurrentE
+                else:
+                    self._lastE = self._currentE
+                self._currentE = pCurrentE
+
+                self._logger.debug("LastE: " + str(self._lastE) + "; CurrentE: " + str(self._currentE))
+
+            self._logger.debug("Remaining Distance: " + str(self._remaining_distance))
+
+            if(self._remaining_distance > 0):
+                # Calculate the remaining distance from detection distance
+                # currentE - lastE is the delta distance
+                if(self._absolut_extrusion):
+                    deltaDistance = self._currentE - self._lastE
+                # With relative extrusion the current extrusion value is the delta distance
+                else:
+                    deltaDistance = float(pCurrentE)
+                if(deltaDistance > self.DETECTION_DISTANCE):
+                    # Calculate the deltaDistance modulo the motion_sensor_detection_distance
+                    # Sometimes the polling of M114 is inaccurate so that with the next poll
+                    # very high distances are put back followed by zero distance changes
+                    deltaDistance = deltaDistance % self.DETECTION_DISTANCE
+
+                self._logger.debug("Delta Distance: " + str(deltaDistance))
+                self._remaining_distance = (self._remaining_distance - deltaDistance)
+
+            else:
+                self.callbackFilamentStopped()
+
+    def reset_distance (self, pPin):
+        self._logger.debug("Motion sensor detected movement")
+        if(self._remaining_distance < self.DETECTION_DISTANCE):
+            self._remaining_distance = self.DETECTION_DISTANCE
+            self._filament_moving = True
+
+    # Initialize the distance detection values
+    def init_distance_detection(self):
+        self._lastE = float(-1)
+        self._currentE = float(0)
+        self.reset_remainin_distance()
+
+    # Reset the remaining distance on start or resume
+    # START_DISTANCE_OFFSET is used for the (re-)start sequence
+    def reset_remainin_distance(self):
+        self._remaining_distance = (float(self.DETECTION_DISTANCE) + self.START_DISTANCE_OFFSET)
+
+    def ToYAML(self):
+        data = {
+            'pin': self._pin,
+            'isEnabled': self._is_enabled
+        }
+
+        return data
+
+    #def toJSON(self):
+    #     return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)

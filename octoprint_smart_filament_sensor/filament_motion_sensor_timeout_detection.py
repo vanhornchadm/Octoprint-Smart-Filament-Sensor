@@ -8,17 +8,16 @@ class FilamentMotionSensorTimeoutDetection(threading.Thread):
     keepRunning = True
 
     # Initialize FilamentMotionSensor
-    def __init__(self, threadID, threadName, pUsedPin, pMaxNotMovingTime, pLogger, pData, pCallback=None):
+    def __init__(self, threadID, threadName, pUsedPin, pMaxNotMovingTime, pLogger, pCallback=None):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = threadName
-        self.callback = pCallback
+        self.callbackFilamentMoving = pCallback
         self._logger = pLogger
-        self._data = pData
 
         self.used_pin = pUsedPin
         self.max_not_moving_time = pMaxNotMovingTime
-        self._data.last_motion_detected = time.time()
+        self.last_motion_detected = time.time()
         self.keepRunning = True
 
         # Remove event, if already an event was set
@@ -28,15 +27,16 @@ class FilamentMotionSensorTimeoutDetection(threading.Thread):
             self._logger.warn("Pin " + str(pUsedPin) + " not used before")
             
         GPIO.add_event_detect(self.used_pin, GPIO.BOTH, callback=self.motion)
+        self._logger.debug("Added GPIO detection to pin %r" % (self.used_pin))
 
     # Override run method of threading
     def run(self):
         while self.keepRunning:
-            timespan = (time.time() - self._data.last_motion_detected)
+            timespan = (time.time() - self.last_motion_detected)
 
             if (timespan > self.max_not_moving_time):
-                if(self.callback != None):
-                    self.callback()
+                if(self.callbackFilamentMoving != None):
+                    self.callbackFilamentMoving(False, self.last_motion_detected)
 
             time.sleep(0.250)
 
@@ -46,6 +46,6 @@ class FilamentMotionSensorTimeoutDetection(threading.Thread):
     # The new state of the GPIO pin is read and determinated.
     # It is checked if motion is detected and printed to the console.
     def motion(self, pPin):
-        self._data.last_motion_detected = time.time()
-        self.callback(True)
-        self._logger.debug("Motion detected at " + str(self._data.last_motion_detected))
+        self.last_motion_detected = time.time()
+        self.callbackFilamentMoving(True, self.last_motion_detected)
+        self._logger.debug("Motion detected at " + str(self.last_motion_detected))

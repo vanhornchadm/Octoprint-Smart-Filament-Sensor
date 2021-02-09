@@ -12,8 +12,9 @@ $(function(){
         self.isConnectionTestRunning = ko.observable(false);
 
         //Returns the value in Yes/No if the Sensor is enabled 
+        //TODO need refactoring for all sensors
         self.getSensorEnabledString = function(){
-            var sensorEnabled = self.settingsViewModel.settings.plugins.smartfilamentsensor.motion_sensor_enabled();
+            var sensorEnabled = true;//self.settingsViewModel.settings.plugins.smartfilamentsensor.motion_sensor_enabled();
 
             if(sensorEnabled){
                 return "Yes";
@@ -52,17 +53,17 @@ $(function(){
             }
             
             var message = JSON.parse(data);
-            self.remainingDistance(message["_remaining_distance"]);
-            self.lastMotionDetected((new Date((message["_last_motion_detected"] * 1000))).toString());
+            self.remainingDistance(message["remaining_distance"]);
+            self.lastMotionDetected((new Date((message["last_motion_detected"] * 1000))).toString());
 
-            if(message["_filament_moving"] == true){
+            if(message["filament_moving"] == true){
                 self.isFilamentMoving("Yes");
             }
             else{
                 self.isFilamentMoving("No");
             }
 
-            if(message["_connection_test_running"] == true){
+            if(message["connection_test_running"] == true){
                 self.isConnectionTestRunning("Running");
             }
             else{

@@ -38,21 +38,7 @@
                 <span class="help-block"><small>Before selecting a pause command check if your firmware supports it!</small></span>
             </div>
         </div>
-        <!-- GPIO pin on the raspberry -->
-        <div class="control-group">
-            <label class="control-label">{{ _('Motion Sensor GPIO Pin:') }}</label>
-            <div class="controls" data-toggle="tooltip" title="{{ _('Which Raspberry Pi GPIO pin your switch is attached to (-1 disables the plugin)') }}">
-                <input type="text" step="any" min="0" class="input-mini text-right" data-bind="value: settingsViewModel.settings.plugins.smartfilamentsensor.motion_sensor_pin">
-            </div>
-        </div>
-        <!-- Enable / Disable detection -->
-        <div class="control-group">
-            <div class="controls" data-toggle="tooltip" title="{{ _('Enable or disble the sensor usage.') }}">
-                <label class="checkbox">
-                    <input type="checkbox" data-bind="checked: settingsViewModel.settings.plugins.smartfilamentsensor.motion_sensor_enabled"> {{ _('Enable Sensor') }}
-                </label>
-            </div>
-        </div>
+
         <!-- Timeout detection -->
         <h6>{{ _('Timeout detection') }}</h6>
         <div class="control-group">
@@ -79,6 +65,42 @@
                 <span class="help-block"><small>GCode commands that are sent to the printer are interpreted. Don't choose this value too small, because it could make the detection too sensitive.</small></span>
             </div>
         </div>
+
+        <!-- GPIO pins -->
+        <h6>{{ _('GPIO Pin for sensors') }}</h6>
+        <div class="row-fluid">
+            <div class="span7">
+                <div class="row-fluid">
+                    <div class="row-fluid" style="margin-bottom: 5px;">
+                        <div class="span4 text-center" data-toggle="tooltip" title="{{ _('Which Raspberry Pi GPIO pin your switch is attached to (-1 disables the plugin)') }}"><b>Pin</b></div>
+                        <div class="span4 text-center" data-toggle="tooltip" title="{{ _('Enable or disble the sensor usage.') }}"><b>Is Enabled</b></div>
+                        <div class="span2 btn-group text-center"><button class="btn btn-mini icon-plus" data-bind="click: $root.addExtruder"></button></div>
+                    </div>
+                </div>
+                <div class="row-fluid" data-bind="foreach: settingsViewModel.settings.plugins.smartfilamentsensor.extruders">
+                    <div class="row-fluid" style="margin-bottom: 5px;">
+                        <div class="input-append span4 text-center" data-toggle="tooltip" title="{{ _('Which Raspberry Pi GPIO pin your switch is attached to (-1 disables the plugin)') }}"><input type="text" step="any" min="0" class="input-mini" data-bind="value: pin"></div>
+                        <div class="input-append span4 text-center" data-toggle="tooltip" title="{{ _('Enable or disble the sensor usage.') }}"><input type="checkbox" class="input-mini" data-bind="checked: isEnabled"/></div>
+                        <div class="span2 btn-group text-center" style="padding-top: 5px;"><button class="btn btn-mini btn-danger icon-trash" data-bind="click: $root.removeExtruder"></button></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- GPIO pin on the raspberry -->
+        <!--<div class="control-group">
+            <label class="control-label">{{ _('Motion Sensor GPIO Pin:') }}</label>
+            <div class="controls" data-toggle="tooltip" title="{{ _('Which Raspberry Pi GPIO pin your switch is attached to (-1 disables the plugin)') }}">
+                <input type="text" step="any" min="0" class="input-mini text-right" data-bind="value: settingsViewModel.settings.plugins.smartfilamentsensor.motion_sensor_pin">
+            </div>
+        </div>-->
+        <!-- Enable / Disable detection -->
+        <!--<div class="control-group">
+            <div class="controls" data-toggle="tooltip" title="{{ _('Enable or disble the sensor usage.') }}">
+                <label class="checkbox">
+                    <input type="checkbox" data-bind="checked: settingsViewModel.settings.plugins.smartfilamentsensor.motion_sensor_enabled"> {{ _('Enable Sensor') }}
+                </label>
+            </div>
+        </div>-->
         <!-- Connection test -->
         <h6>{{_('Connection Test') }}</h6>
         <div class="control-group">
@@ -97,7 +119,10 @@
         <div class="control-group">
             <div class="alert alert-primary">Press start and then move the filament manually.</div>
             <div class="controls form-inline">
-                <label class="control-label">{{ _('Filament is moving:') }} <span data-bind="text: isFilamentMoving"></span></label>
+                <label class="control-label">{{ _('Checked GPIO pin:') }} <span data-bind="text: gpioPinConnectionTest"></span></label>
+            </div>
+            <div class="controls form-inline">
+                <label class="control-label">{{ _('Is filament moving:') }} <span data-bind="text: isFilamentMoving"></span></label>
             </div>
         </div>
         <div class="btn-group">
