@@ -1,18 +1,12 @@
 import json
+from octoprint_smart_filament_sensor.filament_motion_sensor_timeout_detection import FilamentMotionSensorTimeoutDetection
 from octoprint_smart_filament_sensor.data.SmartFilamentSensorExtruderData import SmartFilamentSensorExtruderData
 from octoprint_smart_filament_sensor.data.ConnectionTest import ConnectionTest
 
 # Data for the detection
 class SmartFilamentSensorDetectionData(object):
-    # Is the print started
-    @property
-    def print_started(self):
-        return self._print_started
 
-    @print_started.setter
-    def print_started(self, value):
-        self._print_started = value
-
+#### Properties - Sensor ####
     # Extrusion mode (true = absolut extrusion; false = relative extrusion)
     @property
     def filament_moving(self):
@@ -21,7 +15,7 @@ class SmartFilamentSensorDetectionData(object):
     @filament_moving.setter
     def filament_moving(self, value):
         self._filament_moving = value
-        self.callbackUpdateUI()
+        self.cbRefreshUI()
 
     # The last point in time the extruder moved
     @property
@@ -31,8 +25,9 @@ class SmartFilamentSensorDetectionData(object):
     @last_motion_detected.setter
     def last_motion_detected(self, value):
         self._last_motion_detected = value
-        self.callbackUpdateUI()
+        self.cbRefreshUI()
 
+#### Properties - Print ####
     @property
     def absolut_extrusion(self):
         return self._absolut_extrusion
@@ -41,7 +36,24 @@ class SmartFilamentSensorDetectionData(object):
     def absolut_extrusion(self, value):
         self._absolut_extrusion = value
 
-#### Extruder ####
+    # Is the print started
+    @property
+    def print_started(self):
+        return self._print_started
+
+    @print_started.setter
+    def print_started(self, value):
+        self._print_started = value
+
+    @property
+    def send_pause_code(self):
+        return self._send_pause_code
+
+    @send_pause_code.setter
+    def send_pause_code(self, value):
+        self._send_pause_code = value
+
+#### Properties - Extruder ####
     # The current selected tool (extruder)
     @property
     def tool(self):
@@ -60,7 +72,7 @@ class SmartFilamentSensorDetectionData(object):
     def extruders(self, value):
         self._extruders = value
 
-#### Connection-Test ####
+#### Properties - Connection-Test ####
     # Is the connection test running
     @property
     def connection_test_running(self):
@@ -69,7 +81,7 @@ class SmartFilamentSensorDetectionData(object):
     @connection_test_running.setter
     def connection_test_running(self, value):
         self._connection_test_running = value
-        self.callbackUpdateUI()
+        self.cbRefreshUI()
 
     @property
     def gpio_pin_connection_test(self):
@@ -78,7 +90,7 @@ class SmartFilamentSensorDetectionData(object):
     @gpio_pin_connection_test.setter
     def gpio_pin_connection_test(self, value):
         self._gpio_pin_connection_test = value
-        self.callbackUpdateUI()
+        self.cbRefreshUI()
 
     @property
     def connectionTest(self):
@@ -88,14 +100,36 @@ class SmartFilamentSensorDetectionData(object):
     def connectionTest(self, value):
         self._connectionTest = value
 
-    # Constructor
-    def __init__(self, pLogger, pRemainingDistance, pAbsolutExtrusion, pCallback=None):
+#### Events ####
+    @property
+    def cbPausePrinter(self):
+        return self._cbPausePrinter
+
+    @cbPausePrinter.setter
+    def cbPausePrinter(self, value):
+        self._cbPausePrinter = value
+
+    @property
+    def cbRefreshUI(self):
+        return self._cbRefreshUI
+
+    @cbRefreshUI.setter
+    def cbRefreshUI(self, value):
+        self._cbRefreshUI = value
+
+#### Constructor ####
+    def __init__(self, pLogger, pRemainingDistance, pAbsolutExtrusion, pCbUpdateUI=None, pCbPausePrinter=None):
         self._logger = pLogger
         self._remaining_distance = pRemainingDistance
         self._absolut_extrusion = pAbsolutExtrusion
+
+        # Events
+        self._cbRefreshUI = pCbUpdateUI
+        self._cbPausePrinter = pCbPausePrinter
+
+        # Const
         # The START_DISTANCE_OFFSETS solves the problem of false detections after the print start
         self.START_DISTANCE_OFFSET = 7
-        self.callbackUpdateUI = pCallback
 
         # Default values
         self._connection_test_running = False
@@ -107,7 +141,11 @@ class SmartFilamentSensorDetectionData(object):
         self._tool = 0
         self._extruders = []
         self._gpio_pin_connection_test = -1
-        self.connectionTest = ConnectionTest(self._logger, self.connectionTestCallback)
+        self._timoutDetection = None
+        self._send_pause_code = False
+
+        # Init
+        self.connectionTest = ConnectionTest(self._logger, self.cbConnectionTest)
 
 #### Extruders ####
     # Adds another extruder to the list of extruders and saves it into settings
@@ -144,10 +182,45 @@ class SmartFilamentSensorDetectionData(object):
     def stopConnectionTest(self):
         self.connection_test_running = not (self.connectionTest.stop_connection_test())
 
-    def connectionTestCallback(self, pMoving, pLastMotionDetected):
+    def cbConnectionTest(self, pMoving, pLastMotionDetected):
         self._logger.debug("Movement detected: %r" % (pMoving))
         self.filament_moving = pMoving
         self._last_motion_detected = pLastMotionDetected
+
+#### Timeout detection ####
+    def startTimeoutDetection(self, pMaxNotMoving):
+        if (self._timoutDetection == None):
+            self._logger.debug("Detection Mode: Timeout detection")
+            self._logger.debug("Timeout: " + str(pMaxNotMoving))
+
+            # Start Timeout_Detection thread
+            #TODO hard coded pin
+            self._timoutDetection = FilamentMotionSensorTimeoutDetection(1, "MotionSensorTimeoutDetectionThread", self.extruders[self.tool].pin, 
+                pMaxNotMoving, self._logger, pCallback=self.printerChangeFilament)
+            self._timoutDetection.start()
+            self._logger.info("Motion sensor started: Timeout detection")
+
+            self.send_pause_code = False
+
+    # Stop the motion_sensor thread
+    def stopTimeoutDetection(self):
+        if(self._timoutDetection != None):
+            self._timoutDetection.keepRunning = False
+            self._timoutDetection = None
+            self._logger.info("Motion sensor stopped")
+
+    # Send configured pause command to the printer to interrupt the print
+    def printerChangeFilament (self, pMoving, pLastMotionDetected):
+        self.filament_moving = pMoving
+        self.last_motion_detected = pLastMotionDetected
+
+        if(pMoving == False):
+            # Check if stop signal was already sent
+            if(not self.send_pause_code):
+                self._logger.debug("Motion sensor detected no movement")
+                #self._logger.info("Pause command: " + self.pause_command)   
+                self.cbPausePrinter()
+                self.send_pause_code = True
 
 #### Format converters ####
     # Convert the current object into JSON
