@@ -79,12 +79,13 @@ class SmartFilamentSensorExtruderData(object):
     # pPin = the GPIO pin for data
     # pSensorEnabled = enables or disables the sensor
     # pRemainingDistance = the start value for the remaining distance in distance detection mode
-    def __init__(self, pPin, pSensorEnabled):
+    def __init__(self, pLogger, pPin, pSensorEnabled):
+        self._logger = pLogger
         self._pin = int(pPin)
         self._is_enabled = pSensorEnabled
         self.DETECTION_DISTANCE = -1
         self._absolut_extrusion = False
-        self.callbackFilamentStopped = None
+        self.cbFilamentStopped = None
         self.START_DISTANCE_OFFSET = -1
         self._remaining_distance = -1
         
@@ -93,12 +94,12 @@ class SmartFilamentSensorExtruderData(object):
         self._currentE = -1
         self._last_motion_detected = ""
 
-    def setup(self, pPin, pSensorEnabled, pRemainingDistance, pAbsolutExtrusion, pCallbackStoppedMoving=None):
+    def setup(self, pPin, pSensorEnabled, pRemainingDistance, pAbsolutExtrusion, pCbStoppedMoving=None):
         self._pin = pPin
         self._is_enabled = pSensorEnabled
         self.DETECTION_DISTANCE = pRemainingDistance
         self._absolut_extrusion = pAbsolutExtrusion
-        self.callbackFilamentStopped = pCallbackStoppedMoving
+        self.cbFilamentStopped = pCbStoppedMoving
         self.START_DISTANCE_OFFSET = 7
         self._remaining_distance = self.DETECTION_DISTANCE + self.START_DISTANCE_OFFSET
         
@@ -139,9 +140,9 @@ class SmartFilamentSensorExtruderData(object):
                 self._remaining_distance = (self._remaining_distance - deltaDistance)
 
             else:
-                self.callbackFilamentStopped()
+                self.cbFilamentStopped()
 
-    def reset_distance (self, pPin):
+    def reset_distance (self):
         self._logger.debug("Motion sensor detected movement")
         if(self._remaining_distance < self.DETECTION_DISTANCE):
             self._remaining_distance = self.DETECTION_DISTANCE
@@ -151,11 +152,11 @@ class SmartFilamentSensorExtruderData(object):
     def init_distance_detection(self):
         self._lastE = float(-1)
         self._currentE = float(0)
-        self.reset_remainin_distance()
+        self.reset_remaining_distance()
 
     # Reset the remaining distance on start or resume
     # START_DISTANCE_OFFSET is used for the (re-)start sequence
-    def reset_remainin_distance(self):
+    def reset_remaining_distance(self):
         self._remaining_distance = (float(self.DETECTION_DISTANCE) + self.START_DISTANCE_OFFSET)
 
     def ToYAML(self):

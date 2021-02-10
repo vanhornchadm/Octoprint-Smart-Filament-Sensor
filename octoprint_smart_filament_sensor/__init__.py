@@ -129,8 +129,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             if extr.is_enabled == True:
                 enabled = True
             elif logging == True and extr.is_enabled == False:
-                self._logger.info("Motion sensor pin %r is deactivated" % (extr.is_enabled))
-                
+                self._logger.info("Motion sensor pin %r is deactivated" % (extr.is_enabled))           
 
         return enabled
 
@@ -145,8 +144,6 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
         return dict(
             #Motion sensor
             mode=0, #GpioModes.BOARD_MODE
-            #motion_sensor_enabled = True, #Sensor detection is enabled by default
-            #motion_sensor_pin=-1,  # Default is no pin
             detection_method = 0, #DetectionMethod.TIMEOUT_DETECTION
 
             # Distance detection
@@ -186,6 +183,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                 self._logger.info("Motion sensor started: Distance detection")
                 self._logger.debug("Detection Mode: Distance detection")
                 self._logger.debug("Distance: " + str(self.motion_sensor_detection_distance))
+                self._data.startDistanceDetection()
 
             # Timeout detection
             elif (self.detection_method == DetectionMethod.TIMEOUT_DETECTION.value):
@@ -199,56 +197,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     def reset_distance (self, pPin):
         self._logger.debug("Motion sensor detected movement")
         self._data.send_pause_code = False
-        if(self._data.remaining_distance < self.motion_sensor_detection_distance):
-            self._data.remaining_distance = self.motion_sensor_detection_distance
-            self._data.filament_moving = True
-
-    # Initialize the distance detection values
-    def init_distance_detection(self):
-        self._data.lastE = float(-1)
-        self._data.currentE = float(0)
-        self.reset_remainin_distance()
-
-    # Reset the remaining distance on start or resume
-    # START_DISTANCE_OFFSET is used for the (re-)start sequence
-    def reset_remainin_distance(self):
-        self._data.remaining_distance = (float(self.motion_sensor_detection_distance) + self._data.START_DISTANCE_OFFSET)
-
-    # Calculate the remaining distance
-    def calc_distance(self, pE):
-        if (self.detection_method == DetectionMethod.DISTANCE_DETECTION.value):
-            # Only with absolute extrusion the delta distance must be calculated
-            if (self._data.absolut_extrusion):
-                # LastE is not used and set to the same value as currentE
-                if (self._data.lastE == -1):
-                    self._data.lastE = pE
-                else:
-                    self._data.lastE = self._data.currentE
-                self._data.currentE = pE
-
-                self._logger.debug("LastE: " + str(self._data.lastE) + "; CurrentE: " + str(self._data.currentE))
-
-            self._logger.debug("Remaining Distance: " + str(self._data.remaining_distance))
-
-            if(self._data.remaining_distance > 0):
-                # Calculate the remaining distance from detection distance
-                # currentE - lastE is the delta distance
-                if(self._data.absolut_extrusion):
-                    deltaDistance = self._data.currentE - self._data.lastE
-                # With relative extrusion the current extrusion value is the delta distance
-                else:
-                    deltaDistance = float(pE)
-                if(deltaDistance > self.motion_sensor_detection_distance):
-                    # Calculate the deltaDistance modulo the motion_sensor_detection_distance
-                    # Sometimes the polling of M114 is inaccurate so that with the next poll
-                    # very high distances are put back followed by zero distance changes
-                    deltaDistance = deltaDistance % self.motion_sensor_detection_distance
-
-                self._logger.debug("Delta Distance: " + str(deltaDistance))
-                self._data.remaining_distance = (self._data.remaining_distance - deltaDistance)
-
-            else:
-                self.printer_change_filament()
+        self._data.extruders[self._data.tool].reset_distance
 
     def updateToUi(self):
         self._plugin_manager.send_plugin_message(self._identifier, self._data.toJSON())
@@ -269,14 +218,14 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             self._data.stopConnectionTest()
             self._data.print_started = True
             if(self.detection_method == DetectionMethod.DISTANCE_DETECTION.value):
-                self.init_distance_detection()
+                self._data.resetDistanceDetectionForAll()
 
         elif event is Events.PRINT_RESUMED:
             self._data.print_started = True
 
             # If distance detection is used reset the remaining distance, because otherwise the print is not resuming anymore
             if(self.detection_method == DetectionMethod.DISTANCE_DETECTION.value):
-                self.reset_remainin_distance()
+                self._data.extruders[self._data.tool].reset_remaining_distance()
 
             self.motion_sensor_start()
 
@@ -375,24 +324,28 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                 for command in commands:
                     if command.startswith("E"):
                         extruder = command[1:]
-                        self.calc_distance(float(extruder))
+                        self._data.extruders[self._data.tool].filament_moved(float(extruder))
                         self._logger.debug("E: " + extruder)
 
             # G92 reset extruder
             elif(gcode == "G92"):
                 if(self.detection_method == DetectionMethod.DISTANCE_DETECTION.value):
-                    self.init_distance_detection()
+                    self._data.resetDistanceDetectionForAll()
                 self._logger.debug("G92: Reset Extruders")
 
+            #TODO Change extrusion to absolut
             # M82 absolut extrusion mode
             elif(gcode == "M82"):
                 self._data.absolut_extrusion = True
                 self._logger.info("M82: Absolut extrusion")
 
+            #TODO Change extrusion to relative
             # M83 relative extrusion mode
             elif(gcode == "M83"):
                 self._data.absolut_extrusion = False
                 self._logger.info("M83: Relative extrusion")
+
+            #TODO Interprete Tool-Changes
 
         return cmd
 

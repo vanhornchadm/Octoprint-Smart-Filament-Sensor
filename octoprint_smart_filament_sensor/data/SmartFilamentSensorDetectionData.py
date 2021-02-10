@@ -120,7 +120,7 @@ class SmartFilamentSensorDetectionData(object):
 #### Constructor ####
     def __init__(self, pLogger, pRemainingDistance, pAbsolutExtrusion, pCbUpdateUI=None, pCbPausePrinter=None):
         self._logger = pLogger
-        self._remaining_distance = pRemainingDistance
+        #self._remaining_distance = pRemainingDistance
         self._absolut_extrusion = pAbsolutExtrusion
 
         # Events
@@ -130,6 +130,7 @@ class SmartFilamentSensorDetectionData(object):
         # Const
         # The START_DISTANCE_OFFSETS solves the problem of false detections after the print start
         self.START_DISTANCE_OFFSET = 7
+        self.DETECTION_DISTANCE = pRemainingDistance
 
         # Default values
         self._connection_test_running = False
@@ -150,7 +151,7 @@ class SmartFilamentSensorDetectionData(object):
 #### Extruders ####
     # Adds another extruder to the list of extruders and saves it into settings
     def addExtruder(self, pPin):
-        self._extruders.append(SmartFilamentSensorExtruderData(pPin, False))
+        self._extruders.append(SmartFilamentSensorExtruderData(self._logger, pPin, False))
         converted = []
 
         for extr in self._extruders:
@@ -163,11 +164,15 @@ class SmartFilamentSensorDetectionData(object):
         self._logger.debug("Start method: loadExtruders")
         loaded = []
         for extr in pExtr:
-            loaded.append(SmartFilamentSensorExtruderData(extr["pin"], extr["isEnabled"]))
+            loaded.append(SmartFilamentSensorExtruderData(self._logger, extr["pin"], extr["isEnabled"]))
 
         self._extruders = loaded
 
         self._logger.debug("End method: loadExtruders")
+
+    def resetDistanceDetectionForAll(self):
+        for extr in self.extruders:
+            extr.reset_remaining_distance()
 
 #### Connection Test ####
     def firstEnabledExtruder(self):
@@ -194,9 +199,8 @@ class SmartFilamentSensorDetectionData(object):
             self._logger.debug("Timeout: " + str(pMaxNotMoving))
 
             # Start Timeout_Detection thread
-            #TODO hard coded pin
             self._timoutDetection = FilamentMotionSensorTimeoutDetection(1, "MotionSensorTimeoutDetectionThread", self.extruders[self.tool].pin, 
-                pMaxNotMoving, self._logger, pCallback=self.printerChangeFilament)
+                pMaxNotMoving, self._logger, pCallback=self.cbPauseTimeoutDetection)
             self._timoutDetection.start()
             self._logger.info("Motion sensor started: Timeout detection")
 
@@ -209,8 +213,14 @@ class SmartFilamentSensorDetectionData(object):
             self._timoutDetection = None
             self._logger.info("Motion sensor stopped")
 
+#### Distance detection ####
+    def startDistanceDetection(self):
+        for extr in self.extruders:
+            extr.setup(extr.pin, extr.is_enabled, self.DETECTION_DISTANCE, self.absolut_extrusion, self.cbPauseDistanceDetection)
+
+#### Printer ####
     # Send configured pause command to the printer to interrupt the print
-    def printerChangeFilament (self, pMoving, pLastMotionDetected):
+    def cbPauseTimeoutDetection (self, pMoving, pLastMotionDetected):
         self.filament_moving = pMoving
         self.last_motion_detected = pLastMotionDetected
 
@@ -222,6 +232,16 @@ class SmartFilamentSensorDetectionData(object):
                 self.cbPausePrinter()
                 self.send_pause_code = True
 
+    def cbPauseDistanceDetection (self):
+        self.filament_moving = False
+
+        # Check if stop signal was already sent
+        if(not self.send_pause_code):
+            self._logger.debug("Motion sensor detected no movement")
+            #self._logger.info("Pause command: " + self.pause_command)   
+            self.cbPausePrinter()
+            self.send_pause_code = True
+
 #### Format converters ####
     # Convert the current object into JSON
     def toJSON(self):
@@ -232,7 +252,7 @@ class SmartFilamentSensorDetectionData(object):
             "absolut_extrusion": self.absolut_extrusion,
             "connection_test_running": self.connection_test_running,
             "tool": self.tool,
-            "remaining_distance": self._remaining_distance,
+            #"remaining_distance": self._remaining_distance,
             "gpio_pin_connection_test": self.gpio_pin_connection_test
         }
         #return jsonObject
