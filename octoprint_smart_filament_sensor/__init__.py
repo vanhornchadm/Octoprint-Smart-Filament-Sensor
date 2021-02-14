@@ -1,12 +1,21 @@
 # coding=utf-8
+#### Python ####
 from __future__ import absolute_import
-import octoprint.plugin
-from octoprint.events import Events
-import RPi.GPIO as GPIO
+import logging
+#import auxiliary_module
 from time import sleep
 import flask
-from octoprint_smart_filament_sensor.data.SmartFilamentSensorDetectionData import SmartFilamentSensorDetectionData
 from enum import Enum
+
+#### Raspberry ####
+import RPi.GPIO as GPIO
+
+#### Octoprint ####
+import octoprint.plugin
+from octoprint.events import Events
+
+#### Smartfilamentsensor Plugin
+from octoprint_smart_filament_sensor.data.SmartFilamentSensorDetectionData import SmartFilamentSensorDetectionData
 
 class DetectionMethod(Enum):
     TIMEOUT_DETECTION = 0
@@ -24,7 +33,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                                  octoprint.plugin.SimpleApiPlugin):
 
     def initialize(self):
-        self._logger.debug("Start method: initialize")
+        self.init_logging()
         self._logger.info("Running RPi.GPIO version '{0}'".format(GPIO.VERSION))
         if GPIO.VERSION < "0.6":       # Need at least 0.6 for edge detection
             raise Exception("RPi.GPIO must be greater than 0.6")
@@ -38,8 +47,6 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             self.extruders = self.addExtruder(-1)
         else:
             self._data.loadExtruders(self.extruders)
-
-        self._logger.debug("End method: initialize")
 
 #Properties
     @property
@@ -79,7 +86,6 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
 # Initialization methods
     def _setup_sensor(self):
-        self._logger.debug("Start method: _setup_sensor")
         # Clean up before intializing again, because ports could already be in use
         #GPIO.cleanup()
 
@@ -99,16 +105,11 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
 
         self.load_smart_filament_sensor_data()
 
-        self._logger.debug("End method: _setup_sensor")
-
     def init_gpio_pins(self):
-        self._logger.debug("Start method: init_gpio_pins")
         for extr in self._data.extruders:
             pin = extr.pin
             GPIO.setup(pin, GPIO.IN)
             self._logger.info("Setup input pin: %r" % (pin))
-
-        self._logger.debug("End method: init_gpio_pins")
 
     def init_sensor_event_callback(self):
         # Add reset_distance if detection_method is distance_detection
@@ -129,7 +130,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
             if extr.is_enabled == True:
                 enabled = True
             elif logging == True and extr.is_enabled == False:
-                self._logger.info("Motion sensor pin %r is deactivated" % (extr.is_enabled))           
+                self._logger.info("Motion sensor pin %r is deactivated" % (extr.pin))           
 
         return enabled
 
@@ -165,6 +166,26 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     def get_assets(self):
         return dict(js=["js/smartfilamentsensor_sidebar.js", "js/smartfilamentsensor_settings.js"])
 
+#### Logging ####      
+    def init_logging(self):
+        # setup customized logger
+        from octoprint.logging.handlers import CleaningTimedRotatingFileHandler
+
+        self._logger = logging.getLogger('sfs')
+        sfs_logging_handler = CleaningTimedRotatingFileHandler(
+            self._settings.get_plugin_logfile_path(),
+            when="D",
+            backupCount=3,
+        )
+        sfs_logging_handler.setFormatter(
+            logging.Formatter("%(asctime)s [%(module)s.%(funcName)s] %(levelname)s: %(message)s")
+        )
+        sfs_logging_handler.setLevel(logging.DEBUG)
+
+        self._logger.addHandler(sfs_logging_handler)
+        self._logger.setLevel(logging.DEBUG)
+        self._logger.propagate = False
+
 # Sensor methods
     # Starts the motion sensor if the sensors are enabled
     def motion_sensor_start(self):
@@ -175,8 +196,9 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                 self._logger.debug("GPIO mode: Board Mode")
             else:
                 self._logger.debug("GPIO mode: BCM Mode")
-            #TODO hard coded pin
-            self._logger.debug("GPIO pin: " + str(self._data.extruders[0].pin))
+
+            for extr in self._data.extruders:
+                self._logger.debug("GPIO pin: " + str(extr.pin))
 
             # Distance detection            
             if (self.detection_method == DetectionMethod.DISTANCE_DETECTION.value):
@@ -322,7 +344,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                 commands = cmd.split(" ")
 
                 for command in commands:
-                    if command.startswith("E"):
+                    if (command.startswith("E")):
                         extruder = command[1:]
                         self._data.extruders[self._data.tool].filament_moved(float(extruder))
                         self._logger.debug("E: " + extruder)
@@ -333,22 +355,21 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                     self._data.resetDistanceDetectionForAll()
                 self._logger.debug("G92: Reset Extruders")
 
-            #TODO Change extrusion to absolut
             # M82 absolut extrusion mode
             elif(gcode == "M82"):
                 self._data.absolut_extrusion = True
                 self._logger.info("M82: Absolut extrusion")
 
-            #TODO Change extrusion to relative
             # M83 relative extrusion mode
             elif(gcode == "M83"):
                 self._data.absolut_extrusion = False
                 self._logger.info("M83: Relative extrusion")
 
-            #TODO Interprete Tool-Changes
+            elif(gcode.startswith("T")):
+                tool = int(gcode[1:])
+                self._data.tool = tool
 
         return cmd
-
 
 __plugin_name__ = "Smart Filament Sensor"
 __plugin_version__ = "1.2.0"

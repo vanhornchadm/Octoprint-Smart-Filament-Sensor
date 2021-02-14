@@ -1,4 +1,5 @@
 import json
+import logging
 from octoprint_smart_filament_sensor.filament_motion_sensor_timeout_detection import FilamentMotionSensorTimeoutDetection
 from octoprint_smart_filament_sensor.data.SmartFilamentSensorExtruderData import SmartFilamentSensorExtruderData
 from octoprint_smart_filament_sensor.data.ConnectionTest import ConnectionTest
@@ -35,6 +36,7 @@ class SmartFilamentSensorDetectionData(object):
     @absolut_extrusion.setter
     def absolut_extrusion(self, value):
         self._absolut_extrusion = value
+        self.setAbsolutExtrusionForAll(value)
 
     # Is the print started
     @property
@@ -120,6 +122,7 @@ class SmartFilamentSensorDetectionData(object):
 #### Constructor ####
     def __init__(self, pLogger, pRemainingDistance, pAbsolutExtrusion, pCbUpdateUI=None, pCbPausePrinter=None):
         self._logger = pLogger
+        #self.init_logging()
         #self._remaining_distance = pRemainingDistance
         self._absolut_extrusion = pAbsolutExtrusion
 
@@ -147,6 +150,27 @@ class SmartFilamentSensorDetectionData(object):
 
         # Init
         self.connectionTest = ConnectionTest(self._logger, self.cbConnectionTest)
+        self._logger.info("DetectionData initialized")
+
+#### Logging ####
+    def init_logging(self):
+        # setup customized logger
+        from octoprint.logging.handlers import CleaningTimedRotatingFileHandler
+
+        self._logger = logging.getLogger('sfs.DetectionData')
+        sfs_logging_handler = CleaningTimedRotatingFileHandler(
+            'plugin_smartfilamentsensor.log',
+            when="D",
+            backupCount=3,
+        )
+        sfs_logging_handler.setFormatter(
+            logging.Formatter("%(asctime)s [%(name)s] %(levelname)s: %(message)s")
+        )
+        sfs_logging_handler.setLevel(logging.DEBUG)
+
+        self._logger.addHandler(sfs_logging_handler)
+        self._logger.setLevel(logging.DEBUG)
+        self._logger.propagate = False
 
 #### Extruders ####
     # Adds another extruder to the list of extruders and saves it into settings
@@ -173,6 +197,10 @@ class SmartFilamentSensorDetectionData(object):
     def resetDistanceDetectionForAll(self):
         for extr in self.extruders:
             extr.reset_remaining_distance()
+
+    def setAbsolutExtrusionForAll(self, pAbsolutExtrusion):
+        for extr in self.extruders:
+            extr.absolut_extrusion = pAbsolutExtrusion
 
 #### Connection Test ####
     def firstEnabledExtruder(self):
@@ -216,7 +244,8 @@ class SmartFilamentSensorDetectionData(object):
 #### Distance detection ####
     def startDistanceDetection(self):
         for extr in self.extruders:
-            extr.setup(extr.pin, extr.is_enabled, self.DETECTION_DISTANCE, self.absolut_extrusion, self.cbPauseDistanceDetection)
+            extr.setup(extr.pin, extr.is_enabled, self.DETECTION_DISTANCE, self.absolut_extrusion, 
+                pCbStoppedMoving=self.cbPauseDistanceDetection, pCbUpdateUI=self.cbRefreshUI)
 
 #### Printer ####
     # Send configured pause command to the printer to interrupt the print
@@ -247,12 +276,12 @@ class SmartFilamentSensorDetectionData(object):
     def toJSON(self):
         jsonObject = {
             "print_started": self.print_started,
-            "filament_moving": self.filament_moving,
-            "last_motion_detected": self.last_motion_detected,
+            "filament_moving": self.extruders[self.tool].filament_moving,
+            "last_motion_detected": self.extruders[self.tool].last_motion_detected,
             "absolut_extrusion": self.absolut_extrusion,
             "connection_test_running": self.connection_test_running,
             "tool": self.tool,
-            #"remaining_distance": self._remaining_distance,
+            "remaining_distance": self.extruders[self.tool].remaining_distance,
             "gpio_pin_connection_test": self.gpio_pin_connection_test
         }
         #return jsonObject
