@@ -1,11 +1,14 @@
 <div class="control-group">
    <div class="controls form-inline">
-       <label class="control-label">{{ _('Sensor enabled:') }} <span data-bind="text: getSensorEnabledString()"></span></label>
+       <label class="control-label">{{ _('Detection mode:') }} <span data-bind="text: getDetectionMethodString()"></span></label>
+   </div>
+   <div class="controls form-inline">
+       <label class="control-label">{{ _('Tool:') }} <span data-bind="text: tool"></span></label>
+   </div>
+    <div class="controls form-inline">
+       <label class="control-label">{{ _('Sensor enabled:') }} <span data-bind="text: isSensorEnabled"></span></label>
     </div>
     <div class="controls form-inline">
-       <label class="control-label">{{ _('Detection mode:') }} <span data-bind="text: getDetectionMethodString()"></span></label>
-    </div>
-   <div class="controls form-inline">
        <label class="control-label">{{ _('Filament is moving:') }} <span data-bind="text: isFilamentMoving"></span></label>
     </div>
     <div class="controls form-inline">

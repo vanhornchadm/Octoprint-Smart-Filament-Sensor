@@ -119,7 +119,7 @@ class SmartFilamentSensorExtruderData(object):
         self.DETECTION_DISTANCE = pRemainingDistance
         self.absolut_extrusion = pAbsolutExtrusion
         self.cbFilamentStopped = pCbStoppedMoving
-        self.cbRefreshUI = pCbUpdateUI
+        self._cbRefreshUI = pCbUpdateUI
         self.START_DISTANCE_OFFSET = 7
         self.remaining_distance = self.DETECTION_DISTANCE + self.START_DISTANCE_OFFSET
         

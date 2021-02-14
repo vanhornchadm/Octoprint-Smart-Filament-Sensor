@@ -271,6 +271,9 @@ class SmartFilamentSensorDetectionData(object):
             self.cbPausePrinter()
             self.send_pause_code = True
 
+    def cbRefreshUIExtruder(self):
+        self.cbRefreshUI()
+
 #### Format converters ####
     # Convert the current object into JSON
     def toJSON(self):
@@ -282,6 +285,7 @@ class SmartFilamentSensorDetectionData(object):
             "connection_test_running": self.connection_test_running,
             "tool": self.tool,
             "remaining_distance": self.extruders[self.tool].remaining_distance,
+            "is_enabled": self.extruders[self.tool].is_enabled,
             "gpio_pin_connection_test": self.gpio_pin_connection_test
         }
         #return jsonObject
