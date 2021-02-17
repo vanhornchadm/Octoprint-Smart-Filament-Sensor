@@ -94,10 +94,19 @@ class ISfsExtruder(object):
 
 #### Sensor ####
     def start_sensor(self):
+        try:
+            GPIO.remove_event_detect(self.pin)
+        except:
+            self._logger.warn("Pin %r not used before" % self.pin)
+
         GPIO.add_event_detect(self.pin, GPIO.BOTH, callback=self.gpio_event)
         pass
 
     def stop_sensor(self):
+        try:
+            GPIO.remove_event_detect(self.pin)
+        except:
+            self._logger.warn("Pin %r not used before" % self.pin)
         pass
 
 #### Conversion ####

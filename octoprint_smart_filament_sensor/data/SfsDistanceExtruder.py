@@ -1,5 +1,6 @@
 #### Python ####
 import json
+from decimal import *
 
 #### Raspberry ####
 import RPi.GPIO as GPIO
@@ -52,16 +53,18 @@ class SfsDistanceExtruder(ISfsExtruder):
         self.DETECTION_DISTANCE = -1
         self.START_DISTANCE_OFFSET = 7
         self._remaining_distance = -1
-        self._filament_moving = False
+        self._filament_moving = True
         self._lastE = -1
         self._currentE = -1
-
-        #self.init_gpio_pin()
 
     def setup(self, pRemainingDistance, pAbsolutExtrusion):
         self.DETECTION_DISTANCE = pRemainingDistance
         self.absolut_extrusion = pAbsolutExtrusion
         self.remaining_distance = self.DETECTION_DISTANCE + self.START_DISTANCE_OFFSET
+
+    def start_sensor(self):
+        self.init_gpio_pin()
+        super().start_sensor()
 
     def filament_moved(self, pCurrentE=None):
         if(self.is_enabled == True):
@@ -76,16 +79,16 @@ class SfsDistanceExtruder(ISfsExtruder):
 
                     self._logger.debug("LastE: " + str(self._lastE) + "; CurrentE: " + str(self._currentE))
 
-                self._logger.debug("Remaining Distance: " + str(self.remaining_distance))
+                self._logger.debug("Remaining Distance before: " + str(self.remaining_distance))
 
                 if(self.remaining_distance > 0):
                     # Calculate the remaining distance from detection distance
                     # currentE - lastE is the delta distance
                     if(self.absolut_extrusion):
-                        deltaDistance = self._currentE - self._lastE
+                        deltaDistance = Decimal(self._currentE) - Decimal(self._lastE)
                     # With relative extrusion the current extrusion value is the delta distance
                     else:
-                        deltaDistance = float(pCurrentE)
+                        deltaDistance = Decimal(pCurrentE)
                     if(deltaDistance > self.DETECTION_DISTANCE):
                         # Calculate the deltaDistance modulo the motion_sensor_detection_distance
                         # Sometimes the polling of M114 is inaccurate so that with the next poll
@@ -93,7 +96,9 @@ class SfsDistanceExtruder(ISfsExtruder):
                         deltaDistance = deltaDistance % self.DETECTION_DISTANCE
 
                     self._logger.debug("Delta Distance: " + str(deltaDistance))
-                    self.remaining_distance = (self.remaining_distance - deltaDistance)
+                    self.remaining_distance = (Decimal(self.remaining_distance) - Decimal(deltaDistance))
+
+                    self._logger.debug("Remaining Distance after: " + str(self.remaining_distance))
 
                 else:
                     self.cbFilamentStopped()
@@ -109,21 +114,21 @@ class SfsDistanceExtruder(ISfsExtruder):
 
     # Initialize the distance detection values
     def init_distance_detection(self):
-        self._lastE = float(-1)
-        self._currentE = float(0)
+        self._lastE = Decimal(-1)
+        self._currentE = Decimal(0)
         self.reset_remaining_distance()
 
     # Reset the remaining distance on start or resume
     # START_DISTANCE_OFFSET is used for the (re-)start sequence
     def reset_remaining_distance(self):
-        self.remaining_distance = (float(self.DETECTION_DISTANCE) + self.START_DISTANCE_OFFSET)
+        self.remaining_distance = (Decimal(self.DETECTION_DISTANCE) + self.START_DISTANCE_OFFSET)
 
     def toJSON(self):
         jsonObject = {
             "filament_moving": self.filament_moving,
             "absolut_extrusion": self.absolut_extrusion,
             "is_enabled": self.is_enabled,
-            "remaining_distance": self.remaining_distance
+            "remaining_distance": str(self.remaining_distance)
         }
         #return jsonObject
         return json.dumps(jsonObject, default=lambda o: o.__dict__, sort_keys=True, indent=4)

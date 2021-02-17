@@ -2,6 +2,7 @@
 #### Python ####
 from __future__ import absolute_import
 import logging
+from decimal import *
 #import auxiliary_module
 from time import sleep
 import flask
@@ -235,8 +236,11 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
     def print_paused(self, pEvent=""):
         self._controller.print_started = False
         self._logger.info("%s: Pausing filament sensors." % (pEvent))
-        if self.is_one_sensor_enabled() and self.detection_method == DetectionMethod.TIMEOUT_DETECTION.value:
-            self._controller.stopTimeoutDetection()
+        if self.is_one_sensor_enabled():
+            if self.detection_method == DetectionMethod.TIMEOUT_DETECTION.value:
+                self._controller.stopTimeoutDetection()
+            elif self.detection_method == DetectionMethod.DISTANCE_DETECTION.value:
+                self._controller.stopDistanceDetection()
 
 # Events
     def on_event(self, event, payload):     
@@ -350,7 +354,7 @@ class SmartFilamentSensor(octoprint.plugin.StartupPlugin,
                 for command in commands:
                     if (command.startswith("E")):
                         extruder = command[1:]
-                        self._controller.extruders[self._controller.tool].filament_moved(float(extruder))
+                        self._controller.extruders[self._controller.tool].filament_moved(Decimal(extruder))
                         self._logger.debug("E: " + extruder)
 
             # G92 reset extruder

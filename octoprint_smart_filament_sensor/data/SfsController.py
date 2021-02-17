@@ -133,7 +133,7 @@ class SfsController(object):
         # Const
         # The START_DISTANCE_OFFSETS solves the problem of false detections after the print start
         #self.START_DISTANCE_OFFSET = 7
-        #self.DETECTION_DISTANCE = pRemainingDistance
+        self.DETECTION_DISTANCE = pRemainingDistance
 
         # Default values
         self._connection_test_running = False
@@ -176,7 +176,8 @@ class SfsController(object):
 #### Extruders ####
     # Adds another extruder to the list of extruders and saves it into settings
     def addExtruder(self, pPin):
-        self._extruders.append(SfsDistanceExtruder(self._logger, pPin, False))
+        self._extruders.append(SfsDistanceExtruder(self._logger, pPin, False, 
+            pCbStoppedMoving=self.cbPauseDistanceDetection, pCbRefreshUI=self.cbRefreshUI))
         converted = []
 
         for extr in self._extruders:
@@ -189,7 +190,8 @@ class SfsController(object):
         self._logger.debug("Start method: loadExtruders")
         loaded = []
         for extr in pExtr:
-            loaded.append(SfsDistanceExtruder(self._logger, extr["pin"], extr["isEnabled"]))
+            loaded.append(SfsDistanceExtruder(self._logger, extr["pin"], extr["isEnabled"], 
+                pCbStoppedMoving=self.cbPauseDistanceDetection, pCbRefreshUI=self.cbRefreshUI))
 
         self._extruders = loaded
 
@@ -255,8 +257,14 @@ class SfsController(object):
 #### Distance detection ####
     def startDistanceDetection(self):
         for extr in self.extruders:
-            extr.setup(extr.pin, extr.is_enabled, self.DETECTION_DISTANCE, self.absolut_extrusion, 
-                pCbStoppedMoving=self.cbPauseDistanceDetection, pCbUpdateUI=self.cbRefreshUI)
+            #def setup(self, pRemainingDistance, pAbsolutExtrusion):
+            extr.setup(self.DETECTION_DISTANCE, self.absolut_extrusion)
+            extr.start_sensor()
+            #pCbStoppedMoving=self.cbPauseDistanceDetection, pCbUpdateUI=self.cbRefreshUI)
+
+    def stopDistanceDetection(self):
+        for extr in self.extruders:
+            extr.stop_sensor()
 
 #### Printer ####
     # Send configured pause command to the printer to interrupt the print
@@ -276,6 +284,9 @@ class SfsController(object):
 
     def cbPauseDistanceDetection (self):
         self.filament_moving = False
+
+        for extr in self.extruders:
+            extr.stop_sensor()
 
         # Check if stop signal was already sent
         if(not self.send_pause_code):
@@ -299,16 +310,3 @@ class SfsController(object):
         }
         #return jsonObject
         return json.dumps(jsonObject, default=lambda o: o.__dict__, sort_keys=True, indent=4)
-
-    #def toYAML(self):
-    #    data = {
-    #        'print_started': self.print_started,
-    #        'filament_moving': self.filament_moving,
-    #        'last_motion_detected': self.last_motion_detected,
-    #        'absolut_extrusion': self.absolut_extrusion,
-    #        'connection_test_running': self.connection_test_running,
-    #        'tool': self.tool,
-    #        'remaining_distance': self._remaining_distance
-    #    }
-
-    #   return data
