@@ -54,29 +54,44 @@ $(function(){
             }
             
             var message = JSON.parse(data);
-            self.remainingDistance(message["remaining_distance"]);
-            self.tool(message["tool"]);
-            self.lastMotionDetected((new Date((message["last_motion_detected"] * 1000))).toString());
 
-            if(message["filament_moving"] == true){
-                self.isFilamentMoving("Yes");
-            }
-            else{
-                self.isFilamentMoving("No");
+            if(typeof message["remaining_distance"] !== 'undefined'){
+                self.remainingDistance(message["remaining_distance"]);
             }
 
-            if(message["connection_test_running"] == true){
-                self.isConnectionTestRunning("Running");
-            }
-            else{
-                self.isConnectionTestRunning("Stopped");
+            if(typeof message["tool"] !== 'undefined'){
+                self.tool(message["tool"]);
             }
 
-            if(message["is_enabled"] == true){
-                self.isSensorEnabled("Yes");
+            if(typeof message["last_motion_detected"] !== 'undefined'){
+                self.lastMotionDetected((new Date((message["last_motion_detected"] * 1000))).toString());
             }
-            else{
-                self.isSensorEnabled("No");
+
+            if(typeof message["filament_moving"] !== 'undefined'){
+                if(message["filament_moving"] == true){
+                    self.isFilamentMoving("Yes");
+                }
+                else{
+                    self.isFilamentMoving("No");
+                }
+            }
+
+            if(typeof message["connection_test_running"] !== 'undefined'){
+                if(message["connection_test_running"] == true){
+                    self.isConnectionTestRunning("Running");
+                }
+                else{
+                    self.isConnectionTestRunning("Stopped");
+                }
+            }
+
+            if(typeof message["is_enabled"] !== 'undefined'){
+                if(message["is_enabled"] == true){
+                    self.isSensorEnabled("Yes");
+                }
+                else{
+                    self.isSensorEnabled("No");
+                }
             }
         };
 

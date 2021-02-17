@@ -32,16 +32,30 @@ $(function(){
             }
             
             var message = JSON.parse(data);
-            self.remainingDistance(message["remaining_distance"]);
-            self.lastMotionDetected(message["last_motion_detected"]);
-            self.isConnectionTestRunning(message["connection_test_running"]);
-            self.gpioPinConnectionTest(message["gpio_pin_connection_test"]);
 
-            if(message["filament_moving"] == true){
-                self.isFilamentMoving("Yes, filament is moving");
+            if(typeof message["remaining_distance"] !== 'undefined'){
+                self.remainingDistance(message["remaining_distance"]);
             }
-            else{
-                self.isFilamentMoving("No, filament is not moving");
+            
+            if(typeof message["last_motion_detected"] !== 'undefined'){
+                self.lastMotionDetected(message["last_motion_detected"]);
+            }
+            
+            if(typeof message["connection_test_running"] !== 'undefined'){
+                self.isConnectionTestRunning(message["connection_test_running"]);
+            }
+
+            if(typeof message["gpio_pin_connection_test"] !== 'undefined'){
+                self.gpioPinConnectionTest(message["gpio_pin_connection_test"]);
+            }
+
+            if(typeof message["filament_moving"] !== 'undefined'){
+                if(message["filament_moving"] == true){
+                    self.isFilamentMoving("Yes, filament is moving");
+                }
+                else{
+                    self.isFilamentMoving("No, filament is not moving");
+                }
             }
         };
 

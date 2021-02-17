@@ -1,24 +1,26 @@
-from octoprint_smart_filament_sensor.filament_motion_sensor_timeout_detection import FilamentMotionSensorTimeoutDetection
+from octoprint_smart_filament_sensor.data.SfsTimeoutExtruder import SfsTimeoutExtruder
 
 class ConnectionTest(object):
     @property
     def connectionTestThread(self):
-        return self._connectionTestThread
+        return self._connectionTest
 
     @connectionTestThread.setter
     def connectionTestThread(self, value):
-        self._connectionTestThread = value
+        self._connectionTest = value
 
-    def __init__(self, pLogger, pCallback=None):
-        self._connectionTestThread = None
+    def __init__(self, pLogger, pCbStoppedMoving=None, pCbRefreshUI=None):
+        self._connectionTest = None
         self._logger = pLogger
-        self.callbackConnectionTest = pCallback
+        self.cbStoppedMoving = pCbStoppedMoving
+        self.cbRefreshUI = pCbRefreshUI
+        self._logger.info("Initialized connection test")
     
     # Connection tests
     def stop_connection_test(self):
-        if (self._connectionTestThread is not None and self._connectionTestThread.name == "ConnectionTest"):
-            self._connectionTestThread.keepRunning = False
-            self._connectionTestThread = None
+        if (self._connectionTest is not None):
+            self._connectionTest.stop_sensor()
+            self._connectionTest = None
             #self._data.connection_test_running = False
             self._logger.info("Connection test stopped")
         else:
@@ -28,12 +30,11 @@ class ConnectionTest(object):
 
     def start_connection_test(self, pPin):
         CONNECTION_TEST_TIME = 2
-        if(self._connectionTestThread == None):
-            #TODO hard coded pin
-            self._connectionTestThread = FilamentMotionSensorTimeoutDetection(1, "ConnectionTest", pPin, 
-                CONNECTION_TEST_TIME, self._logger, pCallback=self.callbackConnectionTest)
-            self._connectionTestThread.start()
-            #self._data.connection_test_running = True
+        if(self._connectionTest == None):
+            self._connectionTest = SfsTimeoutExtruder(self._logger, pPin, True, pCbStoppedMoving=self.cbStoppedMoving, pCbRefreshUI=self.cbRefreshUI)
+            self._connectionTest.setup(CONNECTION_TEST_TIME, False)
+            self._connectionTest.start_sensor()
+
             self._logger.info("Connection test started")
 
             return True # Started successfully

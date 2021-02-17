@@ -2,7 +2,7 @@ import RPi.GPIO as GPIO
 import threading
 import time
 
-class FilamentMotionSensorTimeoutDetection(threading.Thread):
+class SfsTimeoutDetection(threading.Thread):
     used_pin = -1
     max_not_moving_time = -1
     keepRunning = True

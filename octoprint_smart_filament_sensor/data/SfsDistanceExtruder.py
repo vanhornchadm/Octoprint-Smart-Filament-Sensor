@@ -1,39 +1,17 @@
+#### Python ####
 import json
+
+#### Raspberry ####
+import RPi.GPIO as GPIO
+
+#### Plugin ####
+from octoprint_smart_filament_sensor.data.ISfsExtruder import ISfsExtruder
 
 # For multi extruder every extruder could have the same data
 # - A filament sensor
 # - Distance measurements
 # - Timout measurements
-class SmartFilamentSensorExtruderData(object):
-    # The GPIO pin of the sensor
-    @property
-    def pin(self):
-        return self._pin
-
-    @pin.setter
-    def pin(self, value):
-        self._pin = value
-        self.cbRefreshUI()
-
-    # Enables or disables the sensor
-    @property
-    def is_enabled(self):
-        return self._is_enabled
-
-    @is_enabled.setter
-    def is_enabled(self, value):
-        self._is_enabled = value
-        self.cbRefreshUI()
-
-    # The last status of the filament
-    @property
-    def filament_moving(self):
-        return self._filament_moving
-
-    @filament_moving.setter
-    def filament_moving(self, value):
-        self._filament_moving = value
-        self.cbRefreshUI()
+class SfsDistanceExtruder(ISfsExtruder):
 
 #### Distance Detection ####
     # The remaining distance of the extruder
@@ -44,7 +22,7 @@ class SmartFilamentSensorExtruderData(object):
     @remaining_distance.setter
     def remaining_distance(self, value):
         self._remaining_distance = value
-        self.cbRefreshUI()
+        self.cbRefreshUI(self)
 
     # The last extruder position
     @property
@@ -64,69 +42,26 @@ class SmartFilamentSensorExtruderData(object):
     def currentE(self, value):
         self._currentE = value
 
-#### Timeout detection ####
-    # The last point in time the extruder moved
-    @property
-    def last_motion_detected(self):
-        return self._last_motion_detected
-
-    @last_motion_detected.setter
-    def last_motion_detected(self, value):
-        self._last_motion_detected = value
-        self.cbRefreshUI()
-
-#### Events ####
-    @property
-    def cbRefreshUI(self):
-        return self._cbRefreshUI
-
-    @cbRefreshUI.setter
-    def cbRefreshUI(self, value):
-        self._cbRefreshUI = value
-
-#### Print ####
-    @property
-    def absolut_extrusion(self):
-        return self._absolut_extrusion
-
-    @absolut_extrusion.setter
-    def absolut_extrusion(self, value):
-        self._absolut_extrusion = value
-
     # Constructor
     # pPin = the GPIO pin for data
     # pSensorEnabled = enables or disables the sensor
     # pRemainingDistance = the start value for the remaining distance in distance detection mode
-    def __init__(self, pLogger, pPin, pSensorEnabled):
-        self._logger = pLogger
-        self._pin = int(pPin)
-        self._is_enabled = pSensorEnabled
+    def __init__(self, pLogger, pPin, pSensorEnabled, pCbStoppedMoving=None, pCbRefreshUI=None):
+        super().__init__(pLogger, pPin, pSensorEnabled, pCbStoppedMoving, pCbRefreshUI)
+
         self.DETECTION_DISTANCE = -1
-        self._absolut_extrusion = False
-        self.cbFilamentStopped = None
-        self._cbRefreshUI = None
-        self.START_DISTANCE_OFFSET = -1
+        self.START_DISTANCE_OFFSET = 7
         self._remaining_distance = -1
-        
         self._filament_moving = False
         self._lastE = -1
         self._currentE = -1
-        self._last_motion_detected = ""
 
-    def setup(self, pPin, pSensorEnabled, pRemainingDistance, pAbsolutExtrusion, pCbStoppedMoving=None, pCbUpdateUI=None):
-        self._pin = pPin
-        self._is_enabled = pSensorEnabled
+        #self.init_gpio_pin()
+
+    def setup(self, pRemainingDistance, pAbsolutExtrusion):
         self.DETECTION_DISTANCE = pRemainingDistance
         self.absolut_extrusion = pAbsolutExtrusion
-        self.cbFilamentStopped = pCbStoppedMoving
-        self._cbRefreshUI = pCbUpdateUI
-        self.START_DISTANCE_OFFSET = 7
         self.remaining_distance = self.DETECTION_DISTANCE + self.START_DISTANCE_OFFSET
-        
-        self._filament_moving = False
-        self._lastE = -1
-        self._currentE = -1
-        self._last_motion_detected = ""
 
     def filament_moved(self, pCurrentE=None):
         if(self.is_enabled == True):
@@ -165,7 +100,8 @@ class SmartFilamentSensorExtruderData(object):
         else:
             self._logger.debug("Sensor for tool %r is disabled" % (self.pin))
 
-    def reset_distance (self):
+    #def reset_distance (self):
+    def gpio_event (self, pPin):
         self._logger.debug("Motion sensor detected movement")
         if(self.remaining_distance < self.DETECTION_DISTANCE):
             self.remaining_distance = self.DETECTION_DISTANCE
@@ -182,13 +118,12 @@ class SmartFilamentSensorExtruderData(object):
     def reset_remaining_distance(self):
         self.remaining_distance = (float(self.DETECTION_DISTANCE) + self.START_DISTANCE_OFFSET)
 
-    def ToYAML(self):
-        data = {
-            'pin': self._pin,
-            'isEnabled': self._is_enabled
+    def toJSON(self):
+        jsonObject = {
+            "filament_moving": self.filament_moving,
+            "absolut_extrusion": self.absolut_extrusion,
+            "is_enabled": self.is_enabled,
+            "remaining_distance": self.remaining_distance
         }
-
-        return data
-
-    #def toJSON(self):
-    #     return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+        #return jsonObject
+        return json.dumps(jsonObject, default=lambda o: o.__dict__, sort_keys=True, indent=4)
