@@ -5,13 +5,25 @@ $(function(){
         self.settingsViewModel = parameters[0];
         //self.smartfilamentsensorSettings = self.settingsViewModel.settings.plugins.smartfilamentsensor;
 
+        ko.extenders.numeric = function(target, precision) {
+            var result = ko.dependentObservable({
+                read: function() {
+                    return target().toFixed(precision);
+                },
+                write: target
+            });
+
+            result.raw = target;
+            return result;
+        };
+
         self.isSensorEnabled = ko.observable(undefined);
-        self.remainingDistance = ko.observable(undefined);
+        self.remainingDistance = ko.observable(undefined).extend({ numeric: 0 });
         self.lastMotionDetected = ko.observable(undefined);
         self.isFilamentMoving = ko.observable(undefined);
         self.isConnectionTestRunning = ko.observable(false);
 
-        //Returns the value in Yes/No if the Sensor is enabled 
+        //Returns the value in Yes/No if the Sensor is enabled
         self.getSensorEnabledString = function(){
             var sensorEnabled = self.settingsViewModel.settings.plugins.smartfilamentsensor.motion_sensor_enabled();
 
@@ -50,7 +62,7 @@ $(function(){
             if(plugin !== "smartfilamentsensor"){
                 return;
             }
-            
+
             var message = JSON.parse(data);
             self.remainingDistance(message["_remaining_distance"]);
             self.lastMotionDetected((new Date((message["_last_motion_detected"] * 1000))).toString());
